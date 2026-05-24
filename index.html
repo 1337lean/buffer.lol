@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>buffer.lol | Video buffering, latency, and CDN diagnostics</title>
+  <meta name="description" content="buffer.lol helps media teams test stream buffering, video latency, CDN edge health, and upload processing from one modern diagnostics workspace.">
+  <meta name="theme-color" content="#050609">
+  <meta property="og:title" content="buffer.lol">
+  <meta property="og:description" content="A modern diagnostics workspace for stream buffering, video latency, CDN health, and upload processing.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/media-dashboard.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <canvas class="particle-canvas" id="particle-canvas" aria-hidden="true"></canvas>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="buffer.lol home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      buffer<span>.lol</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#workflow">Tests</a>
+      <a href="#features">Features</a>
+      <a href="#access">Access</a>
+    </nav>
+    <button class="header-cta" id="waitlist-modal-open" type="button">Join waitlist</button>
+  </header>
+
+  <main>
+    <section class="hero-section reveal-on-scroll" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          <span class="live-dot" aria-hidden="true"></span>
+          Media diagnostics alpha
+        </div>
+        <h1 id="hero-title">Find the buffer before viewers do.</h1>
+        <p class="hero-lede">
+          buffer.lol tests live streams, uploads, and CDN paths from one clean
+          workspace so media teams can catch latency spikes, stalled segments,
+          and processing delays before they hit production.
+        </p>
+        <form class="signup-form" id="signup-form" data-signup-endpoint="" aria-label="Join the waitlist">
+          <input type="hidden" name="form-name" value="buffer-waitlist">
+          <label class="sr-only" for="email-input">Email address</label>
+          <div class="input-row">
+            <input type="email" id="email-input" name="email" class="email-input" placeholder="you@company.com" autocomplete="email" required>
+            <button type="submit" class="submit-btn" id="submit-btn">
+              <span>Request access</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </button>
+          </div>
+          <p class="form-feedback" id="form-feedback" role="status" aria-live="polite"></p>
+        </form>
+        <div class="hero-meta" aria-label="Product highlights">
+          <span>Stream buffering</span>
+          <span>Video latency</span>
+          <span>CDN edge health</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="buffer.lol media diagnostics preview">
+        <img src="assets/media-dashboard.png" alt="Dark-mode buffer.lol dashboard preview showing video buffering, latency, CDN health, and upload processing panels.">
+        <div class="visual-status">
+          <button class="buffer-button" id="buffer-button" type="button" aria-label="Replay stream buffer test">
+            <svg class="buffer-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="buffer-track" cx="60" cy="60" r="52"></circle>
+              <circle class="buffer-fill" id="buffer-fill" cx="60" cy="60" r="52"></circle>
+            </svg>
+            <span><strong id="percentage-counter">00</strong>%</span>
+          </button>
+          <div>
+            <span class="status-label">Stream buffer</span>
+            <strong id="status-main">initializing probe</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics-strip reveal-on-scroll" aria-label="Media diagnostics metrics">
+      <div>
+        <strong>2.4s</strong>
+        <span>startup buffer target</span>
+      </div>
+      <div>
+        <strong>18</strong>
+        <span>edge regions sampled</span>
+      </div>
+      <div>
+        <strong>&lt;450ms</strong>
+        <span>glass-to-glass target</span>
+      </div>
+    </section>
+
+    <section class="section split-section reveal-on-scroll" id="workflow">
+      <div>
+        <span class="section-kicker">Workflow</span>
+        <h2>Run a media health check in minutes.</h2>
+      </div>
+      <div class="workflow-list">
+        <article>
+          <span>01</span>
+          <h3>Point at a stream or upload</h3>
+          <p>Test HLS, DASH, MP4, or upload endpoints with the same repeatable probe setup.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Watch playback pressure</h3>
+          <p>Track startup time, rebuffer events, dropped frames, bitrate shifts, and latency drift.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Compare the delivery path</h3>
+          <p>See which CDN edges, regions, or processing steps are causing slow starts and failed playback.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section reveal-on-scroll" id="features">
+      <div class="section-heading">
+        <span class="section-kicker">Features</span>
+        <h2>Built for the fragile parts of video delivery.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card reveal-on-scroll">
+          <span class="feature-icon">▶</span>
+          <h3>Buffer testing</h3>
+          <p>Measure startup delay, rebuffer frequency, segment gaps, and bitrate changes across sample sessions.</p>
+        </article>
+        <article class="feature-card reveal-on-scroll">
+          <span class="feature-icon">ms</span>
+          <h3>Latency checks</h3>
+          <p>Monitor glass-to-glass delay, live edge distance, player drift, and recovery after network pressure.</p>
+        </article>
+        <article class="feature-card reveal-on-scroll">
+          <span class="feature-icon">↗</span>
+          <h3>CDN health</h3>
+          <p>Sample edge availability, cache status, response timing, and regional playback quality.</p>
+        </article>
+        <article class="feature-card reveal-on-scroll">
+          <span class="feature-icon">↑</span>
+          <h3>Upload processing</h3>
+          <p>Follow ingest, transcoding, thumbnailing, packaging, and publish readiness in one timeline.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section access-section reveal-on-scroll" id="access">
+      <div>
+        <span class="section-kicker">Access</span>
+        <h2>Bring your video pipeline into the alpha.</h2>
+        <p>We are inviting teams that run streaming apps, course platforms, creator tools, internal media libraries, or upload-heavy products.</p>
+      </div>
+      <div class="console-box" aria-label="Live media diagnostics log">
+        <div class="console-header">
+          <span></span><span></span><span></span>
+          <strong>stream-probe.log</strong>
+        </div>
+        <div class="console-body" id="console-body">
+          <div class="console-line system-line">[sys] stream probe initialized</div>
+          <div class="console-line success-line">[ok] manifest parsed: 6 bitrate variants</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="waitlist-modal" id="waitlist-modal" aria-hidden="true" inert>
+    <div class="modal-backdrop" data-modal-close></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" type="button" data-modal-close aria-label="Close waitlist form">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <span class="section-kicker">Alpha access</span>
+      <h2 id="modal-title">Join the waitlist.</h2>
+      <form class="signup-form modal-signup-form" id="modal-signup-form" data-signup-endpoint="" aria-label="Join the waitlist">
+        <label class="sr-only" for="modal-email-input">Email address</label>
+        <div class="input-row">
+          <input type="email" id="modal-email-input" name="email" class="email-input" placeholder="you@company.com" autocomplete="email" required>
+          <button type="submit" class="submit-btn" id="modal-submit-btn">
+            <span>Request access</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="form-feedback" id="modal-form-feedback" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </div>
+
+  <footer class="site-footer">
+    <span>&copy; 2026 buffer.lol</span>
+    <a href="mailto:hello@buffer.lol">hello@buffer.lol</a>
+  </footer>
+
+  <noscript>
+    <div class="noscript-banner">buffer.lol works best with JavaScript enabled for the live preview and waitlist feedback.</div>
+  </noscript>
+</body>
+</html>
