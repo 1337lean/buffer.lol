@@ -6,7 +6,7 @@ Static alpha preview for buffer.lol, a media diagnostics concept focused on stre
 
 This is a public-preview static site. The diagnostics probe is simulated in the browser and is intended to communicate the product direction, not to provide real stream analysis.
 
-The waitlist forms are wired for Netlify Forms. Local development stores preview submissions in browser `localStorage`; production submissions should be handled by the configured form provider.
+The waitlist forms are wired for Netlify Forms. Local development stores preview submissions in browser `localStorage`; production submissions are expected to be handled by Netlify Forms or another configured form provider.
 
 ## Files
 
@@ -19,7 +19,7 @@ The waitlist forms are wired for Netlify Forms. Local development stores preview
 - `app.js` - interactions, waitlist submission handling, simulated probes, local storage, and admin mockup controls
 - `robots.txt` and `sitemap.xml` - crawl metadata for the public site
 - `_headers`, `_redirects`, and `netlify.toml` - Netlify-compatible security headers, asset caching, and deployed admin blocking
-- `assets/` - dashboard image and favicon
+- `assets/` - high-quality dashboard preview image and favicon
 
 ## Local Development
 
@@ -30,6 +30,13 @@ python3 -m http.server 8080
 ```
 
 Then visit `http://localhost:8080`.
+
+Quick validation:
+
+```sh
+node --check app.js
+xmllint --noout sitemap.xml
+```
 
 Local preview data is stored in these browser keys:
 
@@ -55,6 +62,12 @@ After deploying, submit both the hero form and modal form from the production UR
 
 Deploy the repository as a static site with the production URL `https://buffer.lol/`.
 
+Netlify is the intended static host for the current configuration:
+
+- `netlify.toml` sets the publish directory to the repository root.
+- `_headers` and `netlify.toml` both define security headers and long-lived asset caching.
+- `_redirects` and `netlify.toml` block `/admin.html` from the public deploy with a 404 response.
+
 Recommended checks before publishing:
 
 - Confirm `index.html`, `privacy.html`, `robots.txt`, and `sitemap.xml` are reachable.
@@ -65,6 +78,10 @@ Recommended checks before publishing:
 - Run a keyboard-only pass through the modal, forms, and use-case tabs.
 - Run a mobile, tablet, and desktop smoke test in Chrome, Safari, and Firefox.
 - Run Lighthouse or axe for accessibility and performance regressions.
+
+## Assets
+
+The dashboard preview intentionally uses the full-quality `assets/media-dashboard.png` for the hero and social cards. Keep it crisp unless page weight becomes a measured issue; if optimizing later, prefer a high-quality WebP or AVIF generated with a dedicated image encoder rather than a low-quality JPEG.
 
 ## Security Notes
 
