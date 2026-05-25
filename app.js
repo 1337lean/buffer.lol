@@ -409,8 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const useCaseCopy = document.getElementById('use-case-copy');
   const useCaseMetrics = document.getElementById('use-case-metrics');
   const useCaseFailures = document.getElementById('use-case-failures');
+  const useCasePanel = document.getElementById('use-case-panel');
 
-  function renderUseCase(key) {
+  function renderUseCase(key, focusButton = false) {
     const item = useCases[key] || useCases.live;
     if (useCaseTitle) useCaseTitle.textContent = item.title;
     if (useCaseCopy) useCaseCopy.textContent = item.copy;
@@ -420,11 +421,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const active = button.dataset.useCase === key;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-selected', String(active));
+      button.setAttribute('tabindex', active ? '0' : '-1');
+      if (active && useCasePanel) useCasePanel.setAttribute('aria-labelledby', button.id);
+      if (active && focusButton) button.focus();
     });
   }
 
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => renderUseCase(button.dataset.useCase));
+    button.addEventListener('keydown', (event) => {
+      const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+      if (!keys.includes(event.key)) return;
+      event.preventDefault();
+
+      const buttons = Array.from(tabButtons);
+      const currentIndex = buttons.indexOf(button);
+      const lastIndex = buttons.length - 1;
+      let nextIndex = currentIndex;
+
+      if (event.key === 'Home') nextIndex = 0;
+      if (event.key === 'End') nextIndex = lastIndex;
+      if (event.key === 'ArrowLeft') nextIndex = currentIndex <= 0 ? lastIndex : currentIndex - 1;
+      if (event.key === 'ArrowRight') nextIndex = currentIndex >= lastIndex ? 0 : currentIndex + 1;
+
+      renderUseCase(buttons[nextIndex].dataset.useCase, true);
+    });
   });
   renderUseCase('live');
 
@@ -483,6 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalEmailInput = document.getElementById('modal-email-input');
   const modalFeedback = document.getElementById('modal-form-feedback');
   const modalSubmitButton = document.getElementById('modal-submit-btn');
+  let modalReturnFocus = null;
 
   function setFeedback(target, message, type) {
     if (!target) return;
@@ -793,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openModal() {
     if (!modal) return;
+    modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : modalOpenButton;
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
     modal.removeAttribute('inert');
@@ -808,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.setAttribute('aria-hidden', 'true');
     modal.setAttribute('inert', '');
     document.body.style.overflow = '';
-    if (modalOpenButton) modalOpenButton.focus();
+    if (modalReturnFocus) modalReturnFocus.focus();
   }
 
   if (modalOpenButton) {
@@ -824,6 +847,28 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && modal && modal.classList.contains('is-open')) {
       closeModal();
+    }
+
+    if (event.key !== 'Tab' || !modal || !modal.classList.contains('is-open')) return;
+
+    const focusable = modal.querySelectorAll([
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(','));
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
     }
   });
 });

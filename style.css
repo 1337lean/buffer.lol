@@ -71,6 +71,25 @@ input {
   border: 0;
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 6px;
+  color: var(--text);
+  background: rgba(5, 6, 9, 0.94);
+  box-shadow: var(--shadow);
+  transform: translateY(-140%);
+  transition: transform 0.18s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .particle-canvas,
 .grid-overlay {
   position: fixed;
@@ -430,7 +449,11 @@ h3 {
 .submit-btn:focus-visible,
 .header-cta:focus-visible,
 .nav-links a:focus-visible,
-.site-footer a:focus-visible {
+.site-footer a:focus-visible,
+.email-input:focus-visible,
+.tab-button:focus-visible,
+.text-action:focus-visible,
+.modal-close:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 3px;
 }

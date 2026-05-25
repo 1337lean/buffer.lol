@@ -12,11 +12,13 @@ The waitlist forms are wired for Netlify Forms. Local development stores preview
 
 - `index.html` - public preview, simulated probe, use cases, diagnostics cards, and waitlist forms
 - `privacy.html` - privacy notice for waitlist collection
+- `terms.html` - alpha preview terms and acceptable-use notes
+- `404.html` - public not-found page used by the deployed site
 - `admin.html` - local-only static admin mockup for preview data
 - `style.css` - visual design, responsive styles, and admin-specific styling
 - `app.js` - interactions, waitlist submission handling, simulated probes, local storage, and admin mockup controls
 - `robots.txt` and `sitemap.xml` - crawl metadata for the public site
-- `_headers` - security and indexing headers for hosts that support Netlify-style headers
+- `_headers`, `_redirects`, and `netlify.toml` - Netlify-compatible security headers, asset caching, and deployed admin blocking
 - `assets/` - dashboard image and favicon
 
 ## Local Development
@@ -47,6 +49,8 @@ On Netlify, enable Forms for the site and submissions will be posted to the stat
 
 Before launch, verify duplicate handling, spam controls, and notification settings in the form provider. The current client avoids duplicate local-preview entries only; production deduplication belongs in the form provider or backend.
 
+After deploying, submit both the hero form and modal form from the production URL, confirm the entries arrive with the expected `form-name`, and verify failed submissions show the fallback email message.
+
 ## Deployment
 
 Deploy the repository as a static site with the production URL `https://buffer.lol/`.
@@ -54,14 +58,17 @@ Deploy the repository as a static site with the production URL `https://buffer.l
 Recommended checks before publishing:
 
 - Confirm `index.html`, `privacy.html`, `robots.txt`, and `sitemap.xml` are reachable.
+- Confirm `terms.html` and `404.html` are reachable.
 - Confirm waitlist submissions appear in the form provider.
-- Confirm `admin.html` is not linked publicly and is marked `noindex`.
+- Confirm `admin.html` returns the public 404 page in production.
 - Confirm Open Graph metadata resolves with the absolute image URL.
-- Run a mobile and desktop smoke test.
+- Run a keyboard-only pass through the modal, forms, and use-case tabs.
+- Run a mobile, tablet, and desktop smoke test in Chrome, Safari, and Firefox.
+- Run Lighthouse or axe for accessibility and performance regressions.
 
 ## Security Notes
 
-`admin.html` is a local static demo only. Its session gate and demo password are not authentication, authorization, or data protection. Do not treat it as a secure admin surface.
+`admin.html` is a local static demo only. Its session gate and demo password are not authentication, authorization, or data protection. Do not treat it as a secure admin surface. The Netlify config blocks `/admin.html` from the public deploy with a 404 response.
 
 The `_headers` file includes a basic Content Security Policy, frame blocking, referrer policy, and `nosniff`. If the host does not support `_headers`, configure equivalent headers in that platform.
 
