@@ -9,6 +9,7 @@ build/
 *.tsbuildinfo
 .env
 .env.*
+!.env.example
 
 # Local agent handoff notes
 IMPLEMENTATION_PLAN.md

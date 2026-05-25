@@ -37,8 +37,9 @@ export async function getCurrentWorkspace(userId: string) {
 
 export async function requireWorkspace() {
   const user = await requireAuthUser();
+  await upsertAppUser(user);
   const workspace = await getCurrentWorkspace(user.id);
-  if (!workspace) redirect("/signup?setup=required");
+  if (!workspace) redirect("/onboarding/team");
   return { user, workspace };
 }
 
@@ -49,6 +50,11 @@ export async function requireAdminUser() {
 }
 
 export async function bootstrapUserWorkspace(authUser: User) {
+  await upsertAppUser(authUser);
+  return getCurrentWorkspace(authUser.id);
+}
+
+export async function upsertAppUser(authUser: User) {
   const db = getDb();
   const email = authUser.email;
   if (!email) throw new Error("Authenticated user is missing an email address.");
@@ -68,32 +74,6 @@ export async function bootstrapUserWorkspace(authUser: User) {
         name: displayName
       }
     });
-
-  const existing = await getCurrentWorkspace(authUser.id);
-  if (existing) return existing;
-
-  const baseName = inferTeamName(email, displayName);
-  const teamSlug = await uniqueTeamSlug(baseName);
-  const [team] = await db
-    .insert(teams)
-    .values({
-      name: baseName,
-      slug: teamSlug
-    })
-    .returning();
-
-  await db.insert(teamMembers).values({
-    teamId: team.id,
-    userId: authUser.id,
-    role: "owner"
-  });
-
-  return {
-    teamId: team.id,
-    role: "owner" as const,
-    teamName: team.name,
-    teamSlug: team.slug
-  };
 }
 
 export async function verifyTeamAccess(userId: string, teamId: string) {
@@ -112,14 +92,33 @@ function getDisplayName(authUser: User) {
   return typeof metadataName === "string" && metadataName.trim() ? metadataName.trim() : null;
 }
 
-function inferTeamName(email: string, displayName: string | null) {
+export function inferTeamName(email: string, displayName: string | null) {
+  const genericProviders = new Set([
+    "aol.com",
+    "gmail.com",
+    "googlemail.com",
+    "hotmail.com",
+    "icloud.com",
+    "live.com",
+    "mac.com",
+    "me.com",
+    "msn.com",
+    "outlook.com",
+    "proton.me",
+    "protonmail.com",
+    "yahoo.com"
+  ]);
+  const fullDomain = email.split("@")[1]?.toLowerCase();
+  if (fullDomain && genericProviders.has(fullDomain)) {
+    return displayName ? `${displayName}'s workspace` : "Personal workspace";
+  }
   const domain = email.split("@")[1]?.split(".")[0];
   if (domain) return titleCase(domain);
   if (displayName) return `${displayName}'s team`;
   return "buffer.lol team";
 }
 
-async function uniqueTeamSlug(name: string) {
+export async function uniqueTeamSlug(name: string) {
   const db = getDb();
   const base = slugify(name) || "team";
   for (let index = 0; index < 20; index += 1) {
@@ -130,7 +129,7 @@ async function uniqueTeamSlug(name: string) {
   return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function slugify(value: string) {
+export function slugify(value: string) {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

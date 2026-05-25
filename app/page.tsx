@@ -29,7 +29,10 @@ export default function HomePage() {
             <p className="hero-lede">
               buffer.lol tests live streams, uploads, and CDN paths from one clean workspace so media teams can catch latency spikes, stalled segments, and processing delays before they hit production.
             </p>
-            <WaitlistForm idPrefix="" />
+            <div className="hero-actions" aria-label="Account actions">
+              <Link className="submit-btn" href="/signup"><span>Create account</span><ArrowIcon /></Link>
+              <Link className="submit-btn hero-secondary-action" href="/login"><span>Log in</span><ArrowIcon /></Link>
+            </div>
             <div className="hero-meta" aria-label="Product highlights">
               <span>Stream buffering</span>
               <span>Video latency</span>
@@ -180,7 +183,7 @@ export default function HomePage() {
         </section>
 
         <section className="section access-section reveal-on-scroll" id="access">
-          <div><span className="section-kicker">Access</span><h2>Bring your video pipeline into buffer.lol.</h2><p>We work with teams that run streaming apps, course platforms, creator tools, internal media libraries, or upload-heavy products.</p></div>
+          <div><span className="section-kicker">Access</span><h2>Bring your video pipeline into buffer.lol.</h2><p>Create an account to run diagnostics now, or use the access form if you want help bringing a larger media workflow into the product.</p></div>
           <div className="console-box" aria-label="Live media diagnostics log">
             <ConsoleHeader title="stream-probe.log" />
             <div className="console-body" id="console-body">

@@ -36,7 +36,7 @@ export default async function AppPage() {
             <span className="section-kicker">Recent activity</span>
             <h2>Latest probe runs.</h2>
           </div>
-          <Link className="text-action" href="/app/probes">View all</Link>
+          <Link className="submit-btn product-secondary" href="/app/probes">View all</Link>
         </div>
         <ProbeList rows={recentProbes} />
       </section>

@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  index,
   integer,
   jsonb,
   pgTable,
@@ -32,6 +33,26 @@ export const teamMembers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
   (table) => [primaryKey({ columns: [table.teamId, table.userId] })]
+);
+
+export const teamInvites = pgTable(
+  "team_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+    code: text("code").notNull().unique(),
+    email: text("email"),
+    role: text("role", { enum: ["admin", "member"] }).notNull().default("member"),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedBy: uuid("used_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    index("team_invites_team_id_idx").on(table.teamId),
+    index("team_invites_email_idx").on(table.email)
+  ]
 );
 
 export const waitlistEntries = pgTable("waitlist_entries", {
@@ -98,12 +119,19 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const teamsRelations = relations(teams, ({ many }) => ({
   members: many(teamMembers),
+  invites: many(teamInvites),
   probes: many(probes)
 }));
 
 export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
   team: one(teams, { fields: [teamMembers.teamId], references: [teams.id] }),
   user: one(users, { fields: [teamMembers.userId], references: [users.id] })
+}));
+
+export const teamInvitesRelations = relations(teamInvites, ({ one }) => ({
+  team: one(teams, { fields: [teamInvites.teamId], references: [teams.id] }),
+  creator: one(users, { fields: [teamInvites.createdBy], references: [users.id] }),
+  usedByUser: one(users, { fields: [teamInvites.usedBy], references: [users.id] })
 }));
 
 export const probesRelations = relations(probes, ({ one, many }) => ({

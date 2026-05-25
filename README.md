@@ -8,7 +8,7 @@ Media diagnostics workspace for HLS and DASH URL checks, stream buffering risk, 
 - Supabase Auth
 - Postgres with Drizzle ORM
 - Server-side diagnostic worker path for HLS/DASH probes
-- Authenticated workspace and admin views
+- Authenticated workspace, team onboarding, invite management, and admin views
 
 ## Development
 
@@ -74,6 +74,10 @@ Auth:
 - `/signup`
 - `/logout`
 
+Onboarding:
+
+- `/onboarding/team`
+
 Workspace:
 
 - `/app`
@@ -81,6 +85,16 @@ Workspace:
 - `/app/probes/new`
 - `/app/probes/[id]`
 - `/app/settings/team`
+- `/app/settings/team/invites`
+
+API:
+
+- `/api/teams`
+- `/api/teams/current`
+- `/api/team-members`
+- `/api/team-members/[userId]`
+- `/api/team-invites`
+- `/api/team-invites/redeem`
 
 Admin:
 

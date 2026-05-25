@@ -22,6 +22,19 @@ create table if not exists team_members (
   primary key (team_id, user_id)
 );
 
+create table if not exists team_invites (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references teams(id) on delete cascade,
+  code text not null unique,
+  email text,
+  role text not null default 'member' check (role in ('admin', 'member')),
+  created_by uuid not null references users(id) on delete cascade,
+  expires_at timestamptz,
+  used_at timestamptz,
+  used_by uuid references users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists waitlist_entries (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
@@ -82,3 +95,5 @@ create table if not exists reports (
 create index if not exists probes_team_created_at_idx on probes(team_id, created_at desc);
 create index if not exists probe_events_probe_created_at_idx on probe_events(probe_id, created_at asc);
 create index if not exists team_members_user_id_idx on team_members(user_id);
+create index if not exists team_invites_team_id_idx on team_invites(team_id);
+create index if not exists team_invites_email_idx on team_invites(email);

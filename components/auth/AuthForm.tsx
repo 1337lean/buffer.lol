@@ -16,7 +16,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setMessage(isSignup ? "Creating your workspace..." : "Signing in...");
+    setMessage(isSignup ? "Creating your account..." : "Signing in...");
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -39,8 +39,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       }
 
       const bootstrapResponse = await fetch("/api/auth/bootstrap", { method: "POST" });
-      if (!bootstrapResponse.ok) throw new Error("Could not prepare your workspace.");
-      window.location.assign("/app");
+      if (!bootstrapResponse.ok) throw new Error("Could not prepare your account.");
+      const bootstrapped = (await bootstrapResponse.json()) as { workspace: null | { teamId: string } };
+      window.location.assign(bootstrapped.workspace ? "/app" : "/onboarding/team");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Something went wrong.");
     } finally {

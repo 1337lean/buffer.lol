@@ -15,7 +15,7 @@ export default function SignupPage() {
         <article className="simple-page auth-card">
           <span className="section-kicker">Workspace</span>
           <h1>Create account.</h1>
-          <p>Create your account and default team to start queuing URL probes.</p>
+          <p>Create your account, then make or join a team workspace to start queuing URL probes.</p>
           <AuthForm mode="signup" />
           <p>Already have access? <Link href="/login">Sign in</Link>.</p>
         </article>

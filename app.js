@@ -914,3 +914,21 @@ if (document.readyState === 'loading') {
 } else {
   initBufferLol();
 }
+
+function revealCurrentLandingContent() {
+  document.querySelectorAll('.reveal-on-scroll:not(.is-visible)').forEach((item) => {
+    const rect = item.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 1.08) item.classList.add('is-visible');
+  });
+}
+
+window.addEventListener('pageshow', revealCurrentLandingContent);
+
+const routeRevealObserver = new MutationObserver(() => {
+  window.requestAnimationFrame(revealCurrentLandingContent);
+});
+
+routeRevealObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true
+});
