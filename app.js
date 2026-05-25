@@ -491,37 +491,55 @@ document.addEventListener('DOMContentLoaded', () => {
     target.classList.toggle('is-error', type === 'error');
   }
 
+  function isLocalPreview() {
+    return window.location.protocol === 'file:'
+      || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+  }
+
   function redactEmail(email) {
     const [name, domain] = email.split('@');
     if (!domain) return '[redacted]';
     return `${name.slice(0, 2)}...@${domain}`;
   }
 
-  async function registerEmail(email, endpoint) {
-    if (endpoint) {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source: 'buffer.lol' })
-      });
-
-      if (!response.ok) throw new Error(`Signup failed with ${response.status}`);
-      return 'remote';
-    }
-
+  function saveLocalWaitlist(email) {
     const saved = readJSON(STORAGE_KEYS.waitlist, []);
     const normalized = saved.map(normalizeWaitlistEntry);
     if (!normalized.some((entry) => entry.email.toLowerCase() === email.toLowerCase())) {
       saved.push({
         id: `signup_${Date.now().toString(36)}`,
         email,
-        source: 'public preview',
+        source: 'local preview',
         createdAt: new Date().toISOString(),
         status: 'new'
       });
       writeJSON(STORAGE_KEYS.waitlist, saved);
     }
-    return 'local';
+  }
+
+  async function registerEmail(email, form) {
+    const endpoint = form.dataset.signupEndpoint ? form.dataset.signupEndpoint.trim() : '';
+
+    if (endpoint && !isLocalPreview()) {
+      const body = new URLSearchParams(new FormData(form));
+      body.set('email', email);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+
+      if (!response.ok) throw new Error(`Signup failed with ${response.status}`);
+      return 'remote';
+    }
+
+    if (isLocalPreview()) {
+      saveLocalWaitlist(email);
+      return 'local';
+    }
+
+    throw new Error('Signup endpoint is not configured');
   }
 
   function bindSignupForm(form, input, button, feedbackTarget) {
@@ -540,20 +558,20 @@ document.addEventListener('DOMContentLoaded', () => {
       setFeedback(feedbackTarget, 'Saving your request...', '');
 
       try {
-        const mode = await registerEmail(email, form.dataset.signupEndpoint.trim());
+        const mode = await registerEmail(email, form);
         input.value = '';
         addConsoleLine(`[ok] alpha request staged for ${redactEmail(email)}`, 'success-line');
         setFeedback(
           feedbackTarget,
           mode === 'remote'
             ? 'Request received. We will follow up when your alpha slot opens.'
-            : 'Request saved in this preview. Connect a signup endpoint before launch.',
+            : 'Request saved locally for this browser preview. Production submissions require the configured form endpoint.',
           'success'
         );
       } catch (error) {
         console.error(error);
         addConsoleLine('[warn] waitlist request failed', 'warn-line');
-        setFeedback(feedbackTarget, 'Could not save that request. Try again in a moment.', 'error');
+        setFeedback(feedbackTarget, 'Could not send that request. Please try again or email hello@buffer.lol.', 'error');
       } finally {
         button.disabled = false;
         input.disabled = false;
