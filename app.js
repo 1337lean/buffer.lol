@@ -618,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearDemoData = document.getElementById('clear-demo-data');
   const probeActivity = document.getElementById('probe-activity');
   const diagnosticsQueue = document.getElementById('diagnostics-queue');
+  let adminTransitionTimer;
 
   const seedWaitlist = [
     { id: 'seed_1', email: 'ops@northstar.video', source: 'demo seed', createdAt: '2026-05-18T15:12:00.000Z', status: 'new' },
@@ -743,12 +744,47 @@ document.addEventListener('DOMContentLoaded', () => {
     renderQueue(probes);
   }
 
-  function setAdminUnlocked(unlocked) {
+  function setAdminUnlocked(unlocked, animate = false) {
     if (!adminGate || !adminDashboard) return;
-    adminGate.hidden = unlocked;
-    adminDashboard.hidden = !unlocked;
+    window.clearTimeout(adminTransitionTimer);
+    adminGate.classList.remove('is-leaving');
+    adminDashboard.classList.remove('is-entering');
     if (adminLock) adminLock.hidden = !unlocked;
-    if (unlocked) renderAdmin();
+    if (!unlocked) {
+      adminGate.style.removeProperty('height');
+      adminGate.style.removeProperty('min-height');
+      adminGate.hidden = false;
+      adminDashboard.hidden = true;
+      return;
+    }
+
+    renderAdmin();
+    adminDashboard.hidden = false;
+
+    if (!animate || prefersReducedMotion) {
+      adminGate.style.removeProperty('height');
+      adminGate.style.removeProperty('min-height');
+      adminGate.hidden = true;
+      adminDashboard.scrollIntoView({ block: 'start' });
+      return;
+    }
+
+    adminGate.hidden = false;
+    adminGate.style.height = `${adminGate.getBoundingClientRect().height}px`;
+    adminGate.style.minHeight = '0';
+    adminGate.classList.add('is-leaving');
+    adminDashboard.classList.add('is-entering');
+    window.requestAnimationFrame(() => {
+      adminGate.style.height = '0';
+    });
+
+    adminTransitionTimer = window.setTimeout(() => {
+      adminGate.hidden = true;
+      adminGate.style.removeProperty('height');
+      adminGate.style.removeProperty('min-height');
+      adminGate.classList.remove('is-leaving');
+      adminDashboard.classList.remove('is-entering');
+    }, 680);
   }
 
   if (adminGate && adminDashboard) {
@@ -759,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         if (adminPassword && adminPassword.value === 'buffer') {
           sessionStorage.setItem('buffer_lol_admin_unlocked', 'true');
-          setAdminUnlocked(true);
+          setAdminUnlocked(true, true);
         } else {
           setFeedback(adminGateFeedback, 'Use the demo password: buffer', 'error');
         }
