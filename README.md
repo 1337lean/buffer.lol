@@ -1,94 +1,98 @@
 # buffer.lol
 
-Static alpha preview for buffer.lol, a media diagnostics concept focused on stream buffering, video latency, CDN health, and upload processing.
+Media diagnostics workspace for HLS and DASH URL checks, stream buffering risk, video latency, CDN response timing, and report history.
 
-## Status
+## Stack
 
-This is a public-preview static site. The diagnostics probe is simulated in the browser and is intended to communicate the product direction, not to provide real stream analysis.
+- Next.js App Router with TypeScript
+- Supabase Auth
+- Postgres with Drizzle ORM
+- Server-side diagnostic worker path for HLS/DASH probes
+- Authenticated workspace and admin views
 
-The waitlist forms are wired for Netlify Forms. Local development stores preview submissions in browser `localStorage`; production submissions are expected to be handled by Netlify Forms or another configured form provider.
+## Development
 
-## Files
-
-- `index.html` - public preview, simulated probe, use cases, diagnostics cards, and waitlist forms
-- `privacy.html` - privacy notice for waitlist collection
-- `terms.html` - alpha preview terms and acceptable-use notes
-- `404.html` - public not-found page used by the deployed site
-- `admin.html` - local-only static admin mockup for preview data
-- `style.css` - visual design, responsive styles, and admin-specific styling
-- `app.js` - interactions, waitlist submission handling, simulated probes, local storage, and admin mockup controls
-- `robots.txt` and `sitemap.xml` - crawl metadata for the public site
-- `_headers`, `_redirects`, and `netlify.toml` - Netlify-compatible security headers, asset caching, and deployed admin blocking
-- `assets/` - high-quality dashboard preview image and favicon
-
-## Local Development
-
-Open `index.html` directly, or serve the directory with any static server:
-
-```sh
-python3 -m http.server 8080
+```bash
+npm install
+npm run dev
 ```
 
-Then visit `http://localhost:8080`.
+Useful checks:
 
-Quick validation:
-
-```sh
-node --check app.js
-xmllint --noout sitemap.xml
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm audit --omit=dev
 ```
 
-Local preview data is stored in these browser keys:
+## Environment
 
-- `buffer_lol_waitlist`
-- `buffer_lol_probe_runs`
-- `buffer_lol_admin_statuses`
+Copy `.env.example` and fill in Supabase/Postgres values:
 
-## Waitlist Configuration
+```bash
+cp .env.example .env.local
+```
 
-The waitlist forms use:
+Required for full runtime behavior:
 
-- `data-netlify="true"`
-- `method="POST"`
-- `data-signup-endpoint="/"`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `DATABASE_URL`
 
-On Netlify, enable Forms for the site and submissions will be posted to the static form endpoint. If you deploy elsewhere, replace `data-signup-endpoint` on both waitlist forms in `index.html` with the provider endpoint and confirm that provider is designed for public client-side submissions.
+Optional:
 
-Before launch, verify duplicate handling, spam controls, and notification settings in the form provider. The current client avoids duplicate local-preview entries only; production deduplication belongs in the form provider or backend.
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_EMAILS`
+- `QUEUE_PROVIDER`
+- `WORKER_SECRET`
+- `SENTRY_DSN`
+- `POSTHOG_KEY`
+- `POSTHOG_HOST`
+- `EMAIL_PROVIDER`
+- `MUX_WEBHOOK_SECRET`
 
-After deploying, submit both the hero form and modal form from the production URL, confirm the entries arrive with the expected `form-name`, and verify failed submissions show the fallback email message.
+## Database
 
-## Deployment
+The initial migration is in `lib/db/migrations/0000_initial.sql`.
 
-Deploy the repository as a static site with the production URL `https://buffer.lol/`.
+```bash
+npm run db:migrate
+```
 
-Netlify is the intended static host for the current configuration:
+## Routes
 
-- `netlify.toml` sets the publish directory to the repository root.
-- `_headers` and `netlify.toml` both define security headers and long-lived asset caching.
-- `_redirects` and `netlify.toml` block `/admin.html` from the public deploy with a 404 response.
+Public:
 
-Recommended checks before publishing:
+- `/`
+- `/privacy`
+- `/terms`
 
-- Confirm `index.html`, `privacy.html`, `robots.txt`, and `sitemap.xml` are reachable.
-- Confirm `terms.html` and `404.html` are reachable.
-- Confirm waitlist submissions appear in the form provider.
-- Confirm `admin.html` returns the public 404 page in production.
-- Confirm Open Graph metadata resolves with the absolute image URL.
-- Run a keyboard-only pass through the modal, forms, and use-case tabs.
-- Run a mobile, tablet, and desktop smoke test in Chrome, Safari, and Firefox.
-- Run Lighthouse or axe for accessibility and performance regressions.
+Auth:
 
-## Assets
+- `/login`
+- `/signup`
+- `/logout`
 
-The dashboard preview intentionally uses the full-quality `assets/media-dashboard.png` for the hero and social cards. Keep it crisp unless page weight becomes a measured issue; if optimizing later, prefer a high-quality WebP or AVIF generated with a dedicated image encoder rather than a low-quality JPEG.
+Workspace:
 
-## Security Notes
+- `/app`
+- `/app/probes`
+- `/app/probes/new`
+- `/app/probes/[id]`
+- `/app/settings/team`
 
-`admin.html` is a local static demo only. Its session gate and demo password are not authentication, authorization, or data protection. Do not treat it as a secure admin surface. The Netlify config blocks `/admin.html` from the public deploy with a 404 response.
+Admin:
 
-The `_headers` file includes a basic Content Security Policy, frame blocking, referrer policy, and `nosniff`. If the host does not support `_headers`, configure equivalent headers in that platform.
+- `/admin`
+- `/admin/waitlist`
+- `/admin/probes`
+- `/admin/users`
 
-## License
+Admin access is controlled by `ADMIN_EMAILS`.
 
-All rights reserved. See `LICENSE`.
+## Diagnostics
+
+Probe creation validates submitted URLs, blocks local/private/link-local network targets, stores a queued probe, and processes the probe with the default inline worker. The worker fetches manifests, samples a small number of media URLs with range requests, stores events/metrics, and generates a report.
+
+Set `QUEUE_PROVIDER` later to route jobs to an external queue. Until then, the default inline provider is useful for validation and small deployments.

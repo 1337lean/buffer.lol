@@ -1,0 +1,35 @@
+{
+  "name": "buffer-lol",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "lint": "eslint app components lib workers --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "drizzle-orm": "^0.45.2",
+    "next": "16.2.6",
+    "postgres": "^3.4.9",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.57",
+    "@types/react": "18.3.23",
+    "@types/react-dom": "18.3.7",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.2.6",
+    "typescript": "5.8.3"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
+  }
+}

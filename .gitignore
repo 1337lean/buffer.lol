@@ -1,6 +1,11 @@
 .DS_Store
 node_modules/
+.next/
+.npm-cache/
+.playwright-cli/
+output/
 dist/
 build/
+*.tsbuildinfo
 .env
 .env.*

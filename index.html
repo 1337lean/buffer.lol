@@ -53,7 +53,7 @@
       <div class="hero-copy">
         <div class="eyebrow">
           <span class="live-dot" aria-hidden="true"></span>
-          Media diagnostics alpha
+          Media diagnostics workspace
         </div>
         <h1 id="hero-title">Find the buffer before viewers do.</h1>
         <p class="hero-lede">
@@ -61,8 +61,9 @@
           workspace so media teams can catch latency spikes, stalled segments,
           and processing delays before they hit production.
         </p>
-        <form class="signup-form" id="signup-form" name="buffer-waitlist" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" data-signup-endpoint="/" aria-label="Join the waitlist">
+        <form class="signup-form" id="signup-form" name="buffer-waitlist" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" data-signup-endpoint="/api/waitlist" aria-label="Join the waitlist">
           <input type="hidden" name="form-name" value="buffer-waitlist">
+          <input type="hidden" name="source" value="landing-hero">
           <p class="sr-only">
             <label>Do not fill this out if you are human: <input name="bot-field"></label>
           </p>
@@ -74,7 +75,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
             </button>
           </div>
-          <p class="form-privacy">By requesting access, you agree that we can use your email for alpha waitlist communication. Read the <a href="privacy.html">privacy notice</a>.</p>
+          <p class="form-privacy">By requesting access, you agree that we can use your email for product access communication. Read the <a href="privacy.html">privacy notice</a>.</p>
           <p class="form-feedback" id="form-feedback" role="status" aria-live="polite"></p>
         </form>
         <div class="hero-meta" aria-label="Product highlights">
@@ -106,9 +107,9 @@
       <div class="section-heading probe-heading">
         <div>
           <span class="section-kicker">Run a probe</span>
-          <h2 id="probe-title">Simulate a media diagnostics run.</h2>
+          <h2 id="probe-title">Preview a diagnostics report.</h2>
         </div>
-        <p>Preview only. Runs are generated in-browser and saved to local demo storage.</p>
+        <p>Create an account to run server-side HLS and DASH diagnostics against real URLs.</p>
       </div>
 
       <div class="probe-workspace">
@@ -149,7 +150,7 @@
               <span class="status-label">Probe status</span>
               <strong id="probe-status-text">idle</strong>
             </div>
-            <span class="status-pill status-idle" id="probe-status-pill">demo</span>
+            <span class="status-pill status-idle" id="probe-status-pill">sample</span>
           </div>
 
           <div class="probe-stages" id="probe-stages" aria-label="Probe progress">
@@ -338,8 +339,8 @@
     <section class="section access-section reveal-on-scroll" id="access">
       <div>
         <span class="section-kicker">Access</span>
-        <h2>Bring your video pipeline into the alpha.</h2>
-        <p>We are inviting teams that run streaming apps, course platforms, creator tools, internal media libraries, or upload-heavy products.</p>
+        <h2>Bring your video pipeline into buffer.lol.</h2>
+        <p>We work with teams that run streaming apps, course platforms, creator tools, internal media libraries, or upload-heavy products.</p>
       </div>
       <div class="console-box" aria-label="Live media diagnostics log">
         <div class="console-header">
@@ -360,10 +361,11 @@
       <button class="modal-close" type="button" data-modal-close aria-label="Close waitlist form">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
-      <span class="section-kicker">Alpha access</span>
+      <span class="section-kicker">Workspace access</span>
       <h2 id="modal-title">Join the waitlist.</h2>
-      <form class="signup-form modal-signup-form" id="modal-signup-form" name="buffer-waitlist-modal" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" data-signup-endpoint="/" aria-label="Join the waitlist">
+      <form class="signup-form modal-signup-form" id="modal-signup-form" name="buffer-waitlist-modal" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" data-signup-endpoint="/api/waitlist" aria-label="Join the waitlist">
         <input type="hidden" name="form-name" value="buffer-waitlist-modal">
+        <input type="hidden" name="source" value="landing-modal">
         <p class="sr-only">
           <label>Do not fill this out if you are human: <input name="bot-field"></label>
         </p>
@@ -375,7 +377,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
           </button>
         </div>
-        <p class="form-privacy">By requesting access, you agree that we can use your email for alpha waitlist communication. Read the <a href="privacy.html">privacy notice</a>.</p>
+        <p class="form-privacy">By requesting access, you agree that we can use your email for product access communication. Read the <a href="privacy.html">privacy notice</a>.</p>
         <p class="form-feedback" id="modal-form-feedback" role="status" aria-live="polite"></p>
       </form>
     </section>
