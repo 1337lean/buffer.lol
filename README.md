@@ -57,7 +57,7 @@ Optional:
 The initial migration is in `lib/db/migrations/0000_initial.sql`.
 
 ```bash
-npm run db:migrate
+npm run db:setup
 ```
 
 ## Routes
