@@ -1313,6 +1313,7 @@ table,
 .simple-page h1 {
   max-width: 10ch;
   font-size: clamp(3.2rem, 11vw, 6rem);
+  line-height: 1.16;
 }
 
 .simple-page h2 {
