@@ -58,7 +58,7 @@ async function getAdminDashboardData() {
       db.select({ value: count() }).from(probes),
       db.select({ value: count() }).from(users),
       db.select().from(probes).orderBy(desc(probes.createdAt)).limit(6)
-    ]), 3500, "The admin database query timed out.");
+    ]), 15000, "The admin database query timed out.");
 
     return {
       error: "",
