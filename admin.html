@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>buffer.lol admin preview</title>
+  <meta name="description" content="Static demo admin dashboard for buffer.lol waitlist and probe activity.">
+  <meta name="theme-color" content="#050609">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body class="admin-body">
+  <canvas class="particle-canvas" id="particle-canvas" aria-hidden="true"></canvas>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <header class="site-header admin-header">
+    <a class="brand" href="index.html" aria-label="buffer.lol home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      buffer<span>.lol</span>
+    </a>
+    <nav class="nav-links" aria-label="Admin navigation">
+      <a href="index.html#probe">Public preview</a>
+      <a href="#waitlist-admin">Waitlist</a>
+      <a href="#probe-admin">Probes</a>
+    </nav>
+    <button class="header-cta" id="admin-lock" type="button">Lock preview</button>
+  </header>
+
+  <main class="admin-main">
+    <section class="admin-gate" id="admin-gate" aria-labelledby="admin-gate-title">
+      <div class="gate-panel">
+        <span class="section-kicker">Demo admin preview</span>
+        <h1 id="admin-gate-title">Enter the static preview.</h1>
+        <p>This password gate only stores access in this browser session. It is not real security.</p>
+        <form id="admin-gate-form">
+          <label class="sr-only" for="admin-password">Demo password</label>
+          <div class="input-row">
+            <input class="email-input" id="admin-password" type="password" placeholder="Demo password" autocomplete="off" required>
+            <button class="submit-btn" type="submit"><span>Unlock</span></button>
+          </div>
+          <p class="form-feedback" id="admin-gate-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="admin-dashboard" id="admin-dashboard" hidden>
+      <div class="admin-title-row">
+        <div>
+          <span class="section-kicker">Admin preview</span>
+          <h1>Waitlist and probe activity.</h1>
+        </div>
+        <p>Static demo data plus local preview submissions from this browser.</p>
+      </div>
+
+      <section class="admin-metrics" aria-label="Overview metrics">
+        <div><span>Waitlist signups</span><strong id="metric-signups">0</strong></div>
+        <div><span>Probe runs</span><strong id="metric-probes">0</strong></div>
+        <div><span>Warning rate</span><strong id="metric-warning-rate">0%</strong></div>
+        <div><span>Avg startup delay</span><strong id="metric-startup">0.0s</strong></div>
+        <div><span>Avg CDN response</span><strong id="metric-cdn">0ms</strong></div>
+      </section>
+
+      <section class="admin-panel" id="waitlist-admin">
+        <div class="admin-panel-header">
+          <div>
+            <span class="section-kicker">Waitlist</span>
+            <h2>Signup queue</h2>
+          </div>
+          <div class="admin-controls">
+            <input id="waitlist-search" type="search" placeholder="Search email">
+            <select id="waitlist-filter">
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="invited">Invited</option>
+            </select>
+            <button class="text-action" id="export-csv" type="button">Export CSV</button>
+            <button class="text-action danger-action" id="clear-demo-data" type="button">Clear demo data</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Source</th>
+                <th>Signup date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="waitlist-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-grid">
+        <div class="admin-panel" id="probe-admin">
+          <div class="admin-panel-header">
+            <div>
+              <span class="section-kicker">Probe activity</span>
+              <h2>Recent runs</h2>
+            </div>
+          </div>
+          <div class="activity-list" id="probe-activity"></div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-panel-header">
+            <div>
+              <span class="section-kicker">Diagnostics queue</span>
+              <h2>Jobs</h2>
+            </div>
+          </div>
+          <div class="queue-list" id="diagnostics-queue"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

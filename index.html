@@ -29,7 +29,9 @@
       buffer<span>.lol</span>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#probe">Probe</a>
       <a href="#workflow">Tests</a>
+      <a href="#use-cases">Use cases</a>
       <a href="#features">Features</a>
       <a href="#access">Access</a>
     </nav>
@@ -86,6 +88,105 @@
       </div>
     </section>
 
+    <section class="section probe-section reveal-on-scroll" id="probe" aria-labelledby="probe-title">
+      <div class="section-heading probe-heading">
+        <div>
+          <span class="section-kicker">Run a probe</span>
+          <h2 id="probe-title">Simulate a media diagnostics run.</h2>
+        </div>
+        <p>Preview only. Runs are generated in-browser and saved to local demo storage.</p>
+      </div>
+
+      <div class="probe-workspace">
+        <form class="probe-panel" id="probe-form" aria-label="Run a sample media probe">
+          <label for="probe-url">Stream or upload URL</label>
+          <input type="url" id="probe-url" name="probe-url" placeholder="https://example.com/live/master.m3u8" value="https://demo.buffer.lol/live/master.m3u8" required>
+
+          <div class="probe-controls">
+            <label>
+              <span>Probe type</span>
+              <select id="probe-type" name="probe-type">
+                <option>HLS</option>
+                <option>DASH</option>
+                <option>MP4</option>
+                <option>Upload</option>
+              </select>
+            </label>
+            <label>
+              <span>Region</span>
+              <select id="probe-region" name="probe-region">
+                <option>US East</option>
+                <option>US West</option>
+                <option>EU West</option>
+                <option>APAC</option>
+              </select>
+            </label>
+          </div>
+
+          <button class="submit-btn probe-submit" id="probe-submit" type="submit">
+            <span>Run probe</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <div class="probe-results" aria-live="polite">
+          <div class="probe-status-row">
+            <div>
+              <span class="status-label">Probe status</span>
+              <strong id="probe-status-text">idle</strong>
+            </div>
+            <span class="status-pill status-idle" id="probe-status-pill">demo</span>
+          </div>
+
+          <div class="probe-stages" id="probe-stages" aria-label="Probe progress">
+            <span>Fetching manifest</span>
+            <span>Sampling CDN edge</span>
+            <span>Measuring latency</span>
+            <span>Checking buffer stability</span>
+          </div>
+
+          <div class="metric-grid" id="probe-metrics">
+            <div><span>Startup delay</span><strong>--</strong></div>
+            <div><span>Rebuffers</span><strong>--</strong></div>
+            <div><span>Live latency</span><strong>--</strong></div>
+            <div><span>Manifest fetch</span><strong>--</strong></div>
+            <div><span>CDN response</span><strong>--</strong></div>
+            <div><span>Variants</span><strong>--</strong></div>
+          </div>
+
+          <div class="console-box probe-log-box" aria-label="Probe event timeline">
+            <div class="console-header">
+              <span></span><span></span><span></span>
+              <strong>probe-preview.log</strong>
+            </div>
+            <div class="console-body" id="probe-log">
+              <div class="console-line system-line">[sys] waiting for sample probe</div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="report-panel" aria-label="Sample report preview">
+          <div class="report-header">
+            <div>
+              <span class="section-kicker">Sample report</span>
+              <h3 id="report-title">No probe run yet</h3>
+            </div>
+            <span class="status-pill status-idle" id="report-status">preview</span>
+          </div>
+          <ul class="report-checks" id="report-checks">
+            <li><span>Pass</span>Manifest and segment checks will appear here.</li>
+            <li><span>Warn</span>Latency and CDN notes update after a run.</li>
+          </ul>
+          <div class="report-actions-list" id="report-actions-list">
+            <strong>Recommended next actions</strong>
+            <p>Run a sample probe to generate targeted follow-up steps.</p>
+          </div>
+          <button class="text-action" id="copy-report" type="button">Copy report</button>
+          <p class="form-feedback" id="copy-feedback" role="status" aria-live="polite"></p>
+        </aside>
+      </div>
+    </section>
+
     <section class="metrics-strip reveal-on-scroll" aria-label="Media diagnostics metrics">
       <div>
         <strong>2.4s</strong>
@@ -125,6 +226,57 @@
       </div>
     </section>
 
+    <section class="section use-case-section reveal-on-scroll" id="use-cases">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">Use cases</span>
+          <h2>Diagnostics shaped around the media workflow.</h2>
+        </div>
+      </div>
+      <div class="tab-shell">
+        <div class="tab-list" role="tablist" aria-label="Media workflow use cases">
+          <button class="tab-button is-active" type="button" role="tab" aria-selected="true" data-use-case="live">Live streaming</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-use-case="uploads">Upload pipelines</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-use-case="courses">Course platforms</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-use-case="creator">Creator tools</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-use-case="libraries">Internal media libraries</button>
+        </div>
+        <div class="tab-panel">
+          <div>
+            <h3 id="use-case-title">Live streaming</h3>
+            <p id="use-case-copy">Watch live edge distance, segment health, player startup, and drift before the audience sees the stall.</p>
+          </div>
+          <div class="tab-detail-grid">
+            <div>
+              <strong>Key metrics</strong>
+              <ul id="use-case-metrics"></ul>
+            </div>
+            <div>
+              <strong>Common failure modes</strong>
+              <ul id="use-case-failures"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section reveal-on-scroll" id="what-we-catch">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">What we catch</span>
+          <h2>Concrete issues, not vague health scores.</h2>
+        </div>
+      </div>
+      <div class="issue-grid">
+        <article><span class="severity warn">warn</span><h3>Stale manifest</h3><p>Player keeps requesting an old playlist window.</p><strong>Reports live edge drift and manifest age.</strong></article>
+        <article><span class="severity fail">fail</span><h3>Slow first segment</h3><p>Startup hangs before the first playable chunk arrives.</p><strong>Reports first segment timing and route notes.</strong></article>
+        <article><span class="severity warn">warn</span><h3>Edge cache miss</h3><p>One region falls back to origin under load.</p><strong>Reports CDN response spread by sampled edge.</strong></article>
+        <article><span class="severity fail">fail</span><h3>Transcode stuck</h3><p>Upload remains in processing with no publishable rendition.</p><strong>Reports queue stage and stalled duration.</strong></article>
+        <article><span class="severity warn">warn</span><h3>Latency drift</h3><p>Viewer delay expands during a live event.</p><strong>Reports live latency and recovery behavior.</strong></article>
+        <article><span class="severity pass">pass</span><h3>Bitrate ladder gap</h3><p>Missing mid-tier variant causes jarring quality jumps.</p><strong>Reports variant count and ladder spacing.</strong></article>
+      </div>
+    </section>
+
     <section class="section reveal-on-scroll" id="features">
       <div class="section-heading">
         <span class="section-kicker">Features</span>
@@ -151,6 +303,21 @@
           <h3>Upload processing</h3>
           <p>Follow ingest, transcoding, thumbnailing, packaging, and publish readiness in one timeline.</p>
         </article>
+      </div>
+    </section>
+
+    <section class="integration-strip reveal-on-scroll" aria-label="Modern media workflows">
+      <span>Built around modern media workflows</span>
+      <div>
+        <strong>HLS</strong>
+        <strong>DASH</strong>
+        <strong>WebRTC</strong>
+        <strong>Mux</strong>
+        <strong>Cloudflare</strong>
+        <strong>Fastly</strong>
+        <strong>AWS MediaConvert</strong>
+        <strong>S3</strong>
+        <strong>ffmpeg</strong>
       </div>
     </section>
 
@@ -197,6 +364,7 @@
 
   <footer class="site-footer">
     <span>&copy; 2026 buffer.lol</span>
+    <a href="admin.html">Admin preview</a>
     <a href="mailto:hello@buffer.lol">hello@buffer.lol</a>
   </footer>
 

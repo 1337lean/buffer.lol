@@ -35,6 +35,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const STORAGE_KEYS = {
+    waitlist: 'buffer_lol_waitlist',
+    probes: 'buffer_lol_probe_runs',
+    statuses: 'buffer_lol_admin_statuses'
+  };
+
+  function readJSON(key, fallback) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    } catch (error) {
+      console.warn(`Could not read ${key}`, error);
+      return fallback;
+    }
+  }
+
+  function writeJSON(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+  }
+
+  function formatDate(value) {
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
+  }
+
+  function normalizeWaitlistEntry(entry, index) {
+    if (typeof entry === 'string') {
+      return {
+        id: `legacy_${index}_${entry}`,
+        email: entry,
+        source: 'public preview',
+        createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+        status: 'new'
+      };
+    }
+
+    return {
+      id: entry.id || `signup_${index}_${entry.email}`,
+      email: entry.email,
+      source: entry.source || 'public preview',
+      createdAt: entry.createdAt || new Date().toISOString(),
+      status: entry.status || 'new'
+    };
+  }
+
+  function getWaitlist() {
+    const statuses = readJSON(STORAGE_KEYS.statuses, {});
+    return readJSON(STORAGE_KEYS.waitlist, []).map(normalizeWaitlistEntry).map((entry) => ({
+      ...entry,
+      status: statuses[entry.email] || entry.status
+    }));
+  }
+
+  function setWaitlistStatus(email, status) {
+    const statuses = readJSON(STORAGE_KEYS.statuses, {});
+    statuses[email] = status;
+    writeJSON(STORAGE_KEYS.statuses, statuses);
+  }
+
+  function getProbeRuns() {
+    return readJSON(STORAGE_KEYS.probes, []);
+  }
+
   const percentageCounter = document.getElementById('percentage-counter');
   const bufferFill = document.getElementById('buffer-fill');
   const statusMain = document.getElementById('status-main');
@@ -112,6 +188,245 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!prefersReducedMotion) {
     window.setTimeout(cycleLogs, 1400);
   }
+
+  const probeForm = document.getElementById('probe-form');
+  const probeUrl = document.getElementById('probe-url');
+  const probeType = document.getElementById('probe-type');
+  const probeRegion = document.getElementById('probe-region');
+  const probeSubmit = document.getElementById('probe-submit');
+  const probeStatusText = document.getElementById('probe-status-text');
+  const probeStatusPill = document.getElementById('probe-status-pill');
+  const probeStages = document.querySelectorAll('#probe-stages span');
+  const probeMetrics = document.getElementById('probe-metrics');
+  const probeLog = document.getElementById('probe-log');
+  const reportTitle = document.getElementById('report-title');
+  const reportStatus = document.getElementById('report-status');
+  const reportChecks = document.getElementById('report-checks');
+  const reportActions = document.getElementById('report-actions-list');
+  const copyReport = document.getElementById('copy-report');
+  const copyFeedback = document.getElementById('copy-feedback');
+  let latestReportText = '';
+
+  function addProbeLine(text, className = 'system-line') {
+    if (!probeLog) return;
+    const line = document.createElement('div');
+    line.className = `console-line ${className}`;
+    line.textContent = text;
+    probeLog.appendChild(line);
+    probeLog.scrollTop = probeLog.scrollHeight;
+  }
+
+  function randomBetween(min, max, decimals = 0) {
+    const value = Math.random() * (max - min) + min;
+    return Number(value.toFixed(decimals));
+  }
+
+  function buildProbeRun() {
+    const type = probeType ? probeType.value : 'HLS';
+    const region = probeRegion ? probeRegion.value : 'US East';
+    const isUpload = type === 'Upload';
+    const metrics = {
+      startupDelay: isUpload ? randomBetween(1.1, 4.8, 1) : randomBetween(0.8, 5.9, 1),
+      rebufferCount: Math.floor(randomBetween(0, 4.8)),
+      liveLatency: isUpload ? 0 : Math.floor(randomBetween(240, 920)),
+      manifestFetch: Math.floor(randomBetween(42, 280)),
+      cdnResponse: Math.floor(randomBetween(28, 190)),
+      bitrateVariants: Math.floor(randomBetween(3, 9.9))
+    };
+
+    let status = 'pass';
+    let mainWarning = 'No major playback risk detected';
+    if (metrics.startupDelay > 4.2 || metrics.rebufferCount >= 3 || metrics.cdnResponse > 155) {
+      status = 'fail';
+      mainWarning = metrics.cdnResponse > 155 ? 'CDN edge response degraded' : 'Playback stability risk detected';
+    } else if (metrics.startupDelay > 2.8 || metrics.rebufferCount > 0 || metrics.liveLatency > 620 || metrics.manifestFetch > 180) {
+      status = 'warn';
+      mainWarning = metrics.liveLatency > 620 ? 'Live latency drift detected' : 'Startup buffer pressure detected';
+    }
+
+    return {
+      id: `probe_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      url: probeUrl ? probeUrl.value.trim() : '',
+      type,
+      region,
+      status,
+      durationMs: Math.floor(randomBetween(2600, 5600)),
+      metrics,
+      mainWarning
+    };
+  }
+
+  function renderProbeMetrics(run) {
+    if (!probeMetrics) return;
+    const values = [
+      `${run.metrics.startupDelay.toFixed(1)}s`,
+      String(run.metrics.rebufferCount),
+      run.metrics.liveLatency ? `${run.metrics.liveLatency}ms` : 'n/a',
+      `${run.metrics.manifestFetch}ms`,
+      `${run.metrics.cdnResponse}ms`,
+      String(run.metrics.bitrateVariants)
+    ];
+    probeMetrics.querySelectorAll('strong').forEach((item, index) => {
+      item.textContent = values[index] || '--';
+    });
+  }
+
+  function setStatusPill(element, status, label = status) {
+    if (!element) return;
+    element.textContent = label;
+    element.className = `status-pill status-${status}`;
+  }
+
+  function renderReport(run) {
+    if (!run || !reportTitle || !reportChecks || !reportActions) return;
+    const checks = [
+      ['pass', `${run.metrics.bitrateVariants} bitrate variants detected`],
+      [run.metrics.manifestFetch > 180 ? 'warn' : 'pass', `Manifest fetched in ${run.metrics.manifestFetch}ms`],
+      [run.metrics.cdnResponse > 155 ? 'fail' : run.metrics.cdnResponse > 110 ? 'warn' : 'pass', `CDN edge responded in ${run.metrics.cdnResponse}ms`],
+      [run.metrics.rebufferCount > 2 ? 'fail' : run.metrics.rebufferCount > 0 ? 'warn' : 'pass', `${run.metrics.rebufferCount} rebuffer events sampled`]
+    ];
+    const actions = run.status === 'pass'
+      ? ['Keep this route in baseline monitoring.', 'Compare against another region before launch.']
+      : run.status === 'warn'
+        ? ['Re-run from the weakest region.', 'Inspect CDN cache status and manifest freshness.']
+        : ['Pause rollout for this route.', 'Check origin response time and segment availability.'];
+
+    reportTitle.textContent = run.mainWarning;
+    setStatusPill(reportStatus, run.status);
+    reportChecks.innerHTML = checks.map(([state, text]) => `<li><span class="${state}">${state}</span>${text}</li>`).join('');
+    reportActions.innerHTML = `<strong>Recommended next actions</strong>${actions.map((item) => `<p>${item}</p>`).join('')}`;
+    latestReportText = [
+      `buffer.lol sample report (${run.status.toUpperCase()})`,
+      `${run.type} probe from ${run.region}`,
+      `URL: ${run.url}`,
+      `Finding: ${run.mainWarning}`,
+      `Startup: ${run.metrics.startupDelay.toFixed(1)}s, Rebuffers: ${run.metrics.rebufferCount}, CDN: ${run.metrics.cdnResponse}ms`,
+      `Next: ${actions.join(' ')}`
+    ].join('\n');
+  }
+
+  if (probeForm) {
+    probeForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!probeUrl || !probeUrl.value.trim()) return;
+
+      const label = probeSubmit ? probeSubmit.querySelector('span') : null;
+      if (probeSubmit) probeSubmit.disabled = true;
+      if (label) label.textContent = 'Running...';
+      if (probeStatusText) probeStatusText.textContent = 'running';
+      setStatusPill(probeStatusPill, 'idle', 'running');
+      if (probeLog) probeLog.innerHTML = '';
+      probeStages.forEach((stage) => stage.classList.remove('is-active', 'is-complete'));
+
+      const stageMessages = [
+        ['[sys] fetching manifest and rendition list', 'system-line'],
+        ['[sys] sampling CDN edge response from selected region', 'system-line'],
+        ['[sys] measuring startup delay and live edge distance', 'system-line'],
+        ['[sys] checking buffer stability under playback pressure', 'system-line']
+      ];
+
+      stageMessages.forEach(([message, className], index) => {
+        window.setTimeout(() => {
+          probeStages.forEach((stage, stageIndex) => {
+            stage.classList.toggle('is-active', stageIndex === index);
+            if (stageIndex < index) stage.classList.add('is-complete');
+          });
+          addProbeLine(message, className);
+        }, prefersReducedMotion ? 0 : index * 620);
+      });
+
+      window.setTimeout(() => {
+        const run = buildProbeRun();
+        const saved = getProbeRuns();
+        saved.unshift(run);
+        writeJSON(STORAGE_KEYS.probes, saved.slice(0, 30));
+
+        probeStages.forEach((stage) => {
+          stage.classList.remove('is-active');
+          stage.classList.add('is-complete');
+        });
+        renderProbeMetrics(run);
+        if (probeStatusText) probeStatusText.textContent = run.mainWarning;
+        setStatusPill(probeStatusPill, run.status);
+        addProbeLine(`[${run.status}] ${run.mainWarning}`, run.status === 'pass' ? 'success-line' : 'warn-line');
+        addConsoleLine(`[${run.status}] sample ${run.type.toLowerCase()} probe saved for ${run.region}`, run.status === 'pass' ? 'success-line' : 'warn-line');
+        renderReport(run);
+        if (probeSubmit) probeSubmit.disabled = false;
+        if (label) label.textContent = 'Run probe';
+      }, prefersReducedMotion ? 60 : 3000);
+    });
+  }
+
+  if (copyReport) {
+    copyReport.addEventListener('click', async () => {
+      const text = latestReportText || 'Run a sample probe to generate a buffer.lol report preview.';
+      try {
+        if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(text);
+        setFeedback(copyFeedback, 'Report copied.', 'success');
+      } catch (error) {
+        setFeedback(copyFeedback, text, 'success');
+      }
+    });
+  }
+
+  const useCases = {
+    live: {
+      title: 'Live streaming',
+      copy: 'Watch live edge distance, segment health, player startup, and drift before the audience sees the stall.',
+      metrics: ['Live latency', 'Manifest age', 'Rebuffer count', 'CDN edge response'],
+      failures: ['Stale manifest', 'Latency drift', 'Slow first segment']
+    },
+    uploads: {
+      title: 'Upload pipelines',
+      copy: 'Follow ingest, transcode, packaging, thumbnails, and publish readiness with one sample timeline.',
+      metrics: ['Ingest duration', 'Transcode stage', 'Rendition count', 'Processing age'],
+      failures: ['Transcode stuck', 'Missing rendition', 'Thumbnail timeout']
+    },
+    courses: {
+      title: 'Course platforms',
+      copy: 'Check lesson startup and regional delivery before students run into broken playback.',
+      metrics: ['Startup delay', 'MP4 response', 'Captions present', 'Variant availability'],
+      failures: ['Slow lesson start', 'Caption mismatch', 'Expired asset URL']
+    },
+    creator: {
+      title: 'Creator tools',
+      copy: 'Preview how newly uploaded media behaves before creators share it with their audience.',
+      metrics: ['Publish readiness', 'Poster generation', 'Playback status', 'Encoding ladder'],
+      failures: ['Processing delay', 'Poster missing', 'Ladder gap']
+    },
+    libraries: {
+      title: 'Internal media libraries',
+      copy: 'Spot delivery regressions across archived assets, private links, and internal training videos.',
+      metrics: ['Asset response', 'Access status', 'CDN cache state', 'Playback checks'],
+      failures: ['Expired token', 'Cache miss', 'Broken rendition']
+    }
+  };
+
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const useCaseTitle = document.getElementById('use-case-title');
+  const useCaseCopy = document.getElementById('use-case-copy');
+  const useCaseMetrics = document.getElementById('use-case-metrics');
+  const useCaseFailures = document.getElementById('use-case-failures');
+
+  function renderUseCase(key) {
+    const item = useCases[key] || useCases.live;
+    if (useCaseTitle) useCaseTitle.textContent = item.title;
+    if (useCaseCopy) useCaseCopy.textContent = item.copy;
+    if (useCaseMetrics) useCaseMetrics.innerHTML = item.metrics.map((metric) => `<li>${metric}</li>`).join('');
+    if (useCaseFailures) useCaseFailures.innerHTML = item.failures.map((failure) => `<li>${failure}</li>`).join('');
+    tabButtons.forEach((button) => {
+      const active = button.dataset.useCase === key;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+  }
+
+  tabButtons.forEach((button) => {
+    button.addEventListener('click', () => renderUseCase(button.dataset.useCase));
+  });
+  renderUseCase('live');
 
   const canvas = document.getElementById('particle-canvas');
   if (canvas && !prefersReducedMotion) {
@@ -194,10 +509,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'remote';
     }
 
-    const saved = JSON.parse(localStorage.getItem('buffer_lol_waitlist') || '[]');
-    if (!saved.includes(email)) {
-      saved.push(email);
-      localStorage.setItem('buffer_lol_waitlist', JSON.stringify(saved));
+    const saved = readJSON(STORAGE_KEYS.waitlist, []);
+    const normalized = saved.map(normalizeWaitlistEntry);
+    if (!normalized.some((entry) => entry.email.toLowerCase() === email.toLowerCase())) {
+      saved.push({
+        id: `signup_${Date.now().toString(36)}`,
+        email,
+        source: 'public preview',
+        createdAt: new Date().toISOString(),
+        status: 'new'
+      });
+      writeJSON(STORAGE_KEYS.waitlist, saved);
     }
     return 'local';
   }
@@ -242,6 +564,214 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bindSignupForm(signupForm, emailInput, submitButton, feedback);
   bindSignupForm(modalForm, modalEmailInput, modalSubmitButton, modalFeedback);
+
+  const adminGate = document.getElementById('admin-gate');
+  const adminDashboard = document.getElementById('admin-dashboard');
+  const adminGateForm = document.getElementById('admin-gate-form');
+  const adminPassword = document.getElementById('admin-password');
+  const adminGateFeedback = document.getElementById('admin-gate-feedback');
+  const adminLock = document.getElementById('admin-lock');
+  const waitlistTable = document.getElementById('waitlist-table');
+  const waitlistSearch = document.getElementById('waitlist-search');
+  const waitlistFilter = document.getElementById('waitlist-filter');
+  const exportCsv = document.getElementById('export-csv');
+  const clearDemoData = document.getElementById('clear-demo-data');
+  const probeActivity = document.getElementById('probe-activity');
+  const diagnosticsQueue = document.getElementById('diagnostics-queue');
+
+  const seedWaitlist = [
+    { id: 'seed_1', email: 'ops@northstar.video', source: 'demo seed', createdAt: '2026-05-18T15:12:00.000Z', status: 'new' },
+    { id: 'seed_2', email: 'media@courseforge.test', source: 'demo seed', createdAt: '2026-05-20T18:44:00.000Z', status: 'contacted' },
+    { id: 'seed_3', email: 'infra@creatorhub.test', source: 'demo seed', createdAt: '2026-05-22T11:08:00.000Z', status: 'invited' }
+  ];
+
+  const seedProbes = [
+    {
+      id: 'seed_probe_1',
+      createdAt: '2026-05-23T13:10:00.000Z',
+      url: 'https://demo.buffer.lol/live/master.m3u8',
+      type: 'HLS',
+      region: 'US East',
+      status: 'warn',
+      durationMs: 4200,
+      metrics: { startupDelay: 2.9, rebufferCount: 1, liveLatency: 674, manifestFetch: 122, cdnResponse: 88, bitrateVariants: 6 },
+      mainWarning: 'Live latency drift detected'
+    },
+    {
+      id: 'seed_probe_2',
+      createdAt: '2026-05-22T20:26:00.000Z',
+      url: 'https://demo.buffer.lol/uploads/sample.mp4',
+      type: 'MP4',
+      region: 'EU West',
+      status: 'pass',
+      durationMs: 3300,
+      metrics: { startupDelay: 1.6, rebufferCount: 0, liveLatency: 0, manifestFetch: 74, cdnResponse: 51, bitrateVariants: 4 },
+      mainWarning: 'No major playback risk detected'
+    }
+  ];
+
+  function getAdminWaitlist() {
+    const saved = getWaitlist();
+    const byEmail = new Map(seedWaitlist.map((entry) => [entry.email, entry]));
+    saved.forEach((entry) => byEmail.set(entry.email, entry));
+    return Array.from(byEmail.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function getAdminProbes() {
+    const byId = new Map(seedProbes.map((entry) => [entry.id, entry]));
+    getProbeRuns().forEach((entry) => byId.set(entry.id, entry));
+    return Array.from(byId.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function renderAdminMetrics(waitlist, probes) {
+    const warningCount = probes.filter((probe) => probe.status !== 'pass').length;
+    const avgStartup = probes.length ? probes.reduce((sum, probe) => sum + probe.metrics.startupDelay, 0) / probes.length : 0;
+    const avgCdn = probes.length ? probes.reduce((sum, probe) => sum + probe.metrics.cdnResponse, 0) / probes.length : 0;
+    const metricMap = {
+      'metric-signups': waitlist.length,
+      'metric-probes': probes.length,
+      'metric-warning-rate': probes.length ? `${Math.round((warningCount / probes.length) * 100)}%` : '0%',
+      'metric-startup': `${avgStartup.toFixed(1)}s`,
+      'metric-cdn': `${Math.round(avgCdn)}ms`
+    };
+    Object.entries(metricMap).forEach(([id, value]) => {
+      const target = document.getElementById(id);
+      if (target) target.textContent = value;
+    });
+  }
+
+  function renderWaitlistTable(waitlist) {
+    if (!waitlistTable) return;
+    const query = waitlistSearch ? waitlistSearch.value.trim().toLowerCase() : '';
+    const filter = waitlistFilter ? waitlistFilter.value : 'all';
+    const rows = waitlist.filter((entry) => {
+      const matchesQuery = !query || entry.email.toLowerCase().includes(query);
+      const matchesFilter = filter === 'all' || entry.status === filter;
+      return matchesQuery && matchesFilter;
+    });
+
+    waitlistTable.innerHTML = rows.length ? rows.map((entry) => `
+      <tr>
+        <td>${escapeHTML(entry.email)}</td>
+        <td>${escapeHTML(entry.source)}</td>
+        <td>${formatDate(entry.createdAt)}</td>
+        <td><span class="status-pill status-${entry.status}">${entry.status}</span></td>
+        <td>
+          <button type="button" data-status-email="${escapeHTML(entry.email)}" data-status-value="contacted">Contacted</button>
+          <button type="button" data-status-email="${escapeHTML(entry.email)}" data-status-value="invited">Invited</button>
+        </td>
+      </tr>
+    `).join('') : '<tr><td colspan="5">No signups match this view.</td></tr>';
+  }
+
+  function renderProbeActivity(probes) {
+    if (!probeActivity) return;
+    probeActivity.innerHTML = probes.slice(0, 8).map((probe) => `
+      <article>
+        <span class="status-pill status-${probe.status}">${probe.status}</span>
+        <div>
+          <strong>${escapeHTML(probe.mainWarning)}</strong>
+          <p>${escapeHTML(probe.region)} / ${escapeHTML(probe.type)} / ${(probe.durationMs / 1000).toFixed(1)}s / ${formatDate(probe.createdAt)}</p>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function renderQueue(probes) {
+    if (!diagnosticsQueue) return;
+    const queue = [
+      ['running', 'APAC HLS live-edge sample'],
+      ['pending', 'US West upload transcode replay'],
+      ['completed', `${probes[0] ? probes[0].region : 'US East'} ${probes[0] ? probes[0].type : 'HLS'} report packaging`],
+      ['pending', 'EU West CDN edge comparison']
+    ];
+    diagnosticsQueue.innerHTML = queue.map(([status, label]) => `
+      <article>
+        <span class="status-pill status-${status}">${status}</span>
+        <strong>${label}</strong>
+      </article>
+    `).join('');
+  }
+
+  function renderAdmin() {
+    if (!adminDashboard) return;
+    const waitlist = getAdminWaitlist();
+    const probes = getAdminProbes();
+    renderAdminMetrics(waitlist, probes);
+    renderWaitlistTable(waitlist);
+    renderProbeActivity(probes);
+    renderQueue(probes);
+  }
+
+  function setAdminUnlocked(unlocked) {
+    if (!adminGate || !adminDashboard) return;
+    adminGate.hidden = unlocked;
+    adminDashboard.hidden = !unlocked;
+    if (adminLock) adminLock.hidden = !unlocked;
+    if (unlocked) renderAdmin();
+  }
+
+  if (adminGate && adminDashboard) {
+    setAdminUnlocked(sessionStorage.getItem('buffer_lol_admin_unlocked') === 'true');
+
+    if (adminGateForm) {
+      adminGateForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (adminPassword && adminPassword.value === 'buffer') {
+          sessionStorage.setItem('buffer_lol_admin_unlocked', 'true');
+          setAdminUnlocked(true);
+        } else {
+          setFeedback(adminGateFeedback, 'Use the demo password: buffer', 'error');
+        }
+      });
+    }
+
+    if (adminLock) {
+      adminLock.addEventListener('click', () => {
+        sessionStorage.removeItem('buffer_lol_admin_unlocked');
+        setAdminUnlocked(false);
+      });
+    }
+
+    [waitlistSearch, waitlistFilter].forEach((control) => {
+      if (control) control.addEventListener('input', renderAdmin);
+    });
+
+    if (waitlistTable) {
+      waitlistTable.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-status-email]');
+        if (!button) return;
+        setWaitlistStatus(button.dataset.statusEmail, button.dataset.statusValue);
+        renderAdmin();
+      });
+    }
+
+    if (exportCsv) {
+      exportCsv.addEventListener('click', () => {
+        const rows = getAdminWaitlist();
+        const csv = [
+          ['email', 'source', 'signup_date', 'status'],
+          ...rows.map((entry) => [entry.email, entry.source, entry.createdAt, entry.status])
+        ].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'buffer-lol-waitlist-demo.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    if (clearDemoData) {
+      clearDemoData.addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEYS.waitlist);
+        localStorage.removeItem(STORAGE_KEYS.probes);
+        localStorage.removeItem(STORAGE_KEYS.statuses);
+        renderAdmin();
+      });
+    }
+  }
 
   function openModal() {
     if (!modal) return;
