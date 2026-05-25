@@ -1,13 +1,24 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import type { User } from "@supabase/supabase-js";
 import { getDb } from "@/lib/db/client";
 import { teamMembers, teams, users } from "@/lib/db/schema";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withTimeout } from "@/lib/async-timeout";
 
 export async function getCurrentAuthUser() {
+  if (!(await hasSupabaseAuthCookie())) return null;
+
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
+  let result: Awaited<ReturnType<typeof supabase.auth.getUser>>;
+  try {
+    result = await withTimeout(supabase.auth.getUser(), 2500, "Auth validation timed out.");
+  } catch {
+    return null;
+  }
+
+  const { data, error } = result;
   if (error || !data.user) return null;
   return data.user;
 }
@@ -142,7 +153,14 @@ function titleCase(value: string) {
   });
 }
 
-function isAdminEmail(email: string) {
+async function hasSupabaseAuthCookie() {
+  const cookieStore = await cookies();
+  return cookieStore.getAll().some((cookie) => {
+    return cookie.name.includes("auth-token") || cookie.name.startsWith("sb-");
+  });
+}
+
+export function isAdminEmail(email: string) {
   const admins = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((item) => item.trim().toLowerCase())

@@ -1559,6 +1559,16 @@ table,
   font-size: clamp(1.8rem, 4vw, 2.6rem);
 }
 
+.admin-warning {
+  margin-bottom: 1rem;
+  border-color: rgba(245, 158, 11, 0.42);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.admin-warning p {
+  color: var(--muted);
+}
+
 .product-list {
   margin-top: 1rem;
 }
