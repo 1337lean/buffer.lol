@@ -20,6 +20,10 @@ export async function enqueueProbe(probeId: string) {
     return { provider, enqueued: true, processedInline: false };
   }
 
+  if (provider === "qstash") {
+    return enqueueQstashProbe(probeId, provider);
+  }
+
   if (provider === "webhook") {
     const webhookUrl = process.env.QUEUE_WEBHOOK_URL;
     if (!webhookUrl) {
@@ -42,4 +46,47 @@ export async function enqueueProbe(probeId: string) {
 
   logInfo("probe queue provider not implemented yet", { provider, probeId });
   return { provider, enqueued: false, processedInline: false };
+}
+
+async function enqueueQstashProbe(probeId: string, provider: string) {
+  const publishUrl = getQstashPublishUrl();
+  if (!publishUrl) {
+    logInfo("qstash queue missing publish URL or destination", { provider, probeId });
+    return { provider, enqueued: false, processedInline: false };
+  }
+
+  const token = process.env.QSTASH_TOKEN;
+  if (!token && !process.env.QSTASH_PUBLISH_URL) {
+    logInfo("qstash queue missing token", { provider, probeId });
+    return { provider, enqueued: false, processedInline: false };
+  }
+
+  const response = await fetch(publishUrl, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(process.env.WORKER_SECRET ? { "Upstash-Forward-Authorization": `Bearer ${process.env.WORKER_SECRET}` } : {})
+    },
+    body: JSON.stringify({ probeId })
+  });
+
+  logInfo("probe submitted to qstash", { provider, probeId, status: response.status });
+  return { provider, enqueued: response.ok, processedInline: false };
+}
+
+function getQstashPublishUrl() {
+  if (process.env.QSTASH_PUBLISH_URL) return process.env.QSTASH_PUBLISH_URL;
+
+  const workerUrl = process.env.QUEUE_WEBHOOK_URL || buildWorkerUrl();
+  if (!workerUrl) return null;
+
+  const qstashUrl = process.env.QSTASH_URL || "https://qstash.upstash.io";
+  return `${qstashUrl.replace(/\/$/, "")}/v2/publish/${workerUrl}`;
+}
+
+function buildWorkerUrl() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.URL;
+  if (!appUrl) return null;
+  return new URL("/api/workers/probes", appUrl).toString();
 }
