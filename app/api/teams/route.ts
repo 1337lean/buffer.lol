@@ -31,8 +31,11 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
-  const [team] = await db.insert(teams).values({ name, slug }).returning();
-  await db.insert(teamMembers).values({ teamId: team.id, userId: user.id, role: "owner" });
+  const team = await db.transaction(async (tx) => {
+    const [createdTeam] = await tx.insert(teams).values({ name, slug }).returning();
+    await tx.insert(teamMembers).values({ teamId: createdTeam.id, userId: user.id, role: "owner" });
+    return createdTeam;
+  });
 
   return NextResponse.json({ team }, { status: 201 });
 }

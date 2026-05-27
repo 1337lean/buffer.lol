@@ -3,17 +3,15 @@
 import { FormEvent, useState } from "react";
 
 const regions = [
-  ["us-east", "US East"],
-  ["us-west", "US West"],
-  ["eu-west", "EU West"],
-  ["apac", "APAC"]
+  ["us-east", "US East requested"],
+  ["us-west", "US West requested"],
+  ["eu-west", "EU West requested"],
+  ["apac", "APAC requested"]
 ];
 
 const probeTypes = [
   ["hls", "HLS"],
-  ["dash", "DASH"],
-  ["mp4", "MP4"],
-  ["upload", "Upload"]
+  ["dash", "DASH"]
 ];
 
 export function NewProbeForm() {
@@ -46,7 +44,7 @@ export function NewProbeForm() {
 
   return (
     <form className="probe-panel product-form" onSubmit={onSubmit}>
-      <label htmlFor="new-probe-url">Stream or upload URL</label>
+      <label htmlFor="new-probe-url">Stream manifest URL</label>
       <input id="new-probe-url" type="url" value={url} onChange={(event) => setUrl(event.target.value)} required />
       <div className="probe-controls">
         <label>

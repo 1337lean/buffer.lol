@@ -32,7 +32,10 @@ export const teamMembers = pgTable(
     role: text("role", { enum: ["owner", "admin", "member"] }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
-  (table) => [primaryKey({ columns: [table.teamId, table.userId] })]
+  (table) => [
+    primaryKey({ columns: [table.teamId, table.userId] }),
+    index("team_members_user_id_idx").on(table.userId)
+  ]
 );
 
 export const teamInvites = pgTable(
@@ -63,28 +66,36 @@ export const waitlistEntries = pgTable("waitlist_entries", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 });
 
-export const probes = pgTable("probes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
-  createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
-  probeType: text("probe_type", { enum: ["hls", "dash", "mp4", "upload"] }).notNull(),
-  region: text("region").notNull(),
-  status: text("status", { enum: ["queued", "running", "pass", "warn", "fail", "error"] }).notNull().default("queued"),
-  summary: text("summary"),
-  startedAt: timestamp("started_at", { withTimezone: true }),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-});
+export const probes = pgTable(
+  "probes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    probeType: text("probe_type", { enum: ["hls", "dash"] }).notNull(),
+    region: text("region").notNull(),
+    status: text("status", { enum: ["queued", "running", "pass", "warn", "fail", "error"] }).notNull().default("queued"),
+    summary: text("summary"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("probes_team_created_at_idx").on(table.teamId, table.createdAt)]
+);
 
-export const probeEvents = pgTable("probe_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  probeId: uuid("probe_id").notNull().references(() => probes.id, { onDelete: "cascade" }),
-  level: text("level", { enum: ["system", "pass", "warn", "fail", "error"] }).notNull(),
-  message: text("message").notNull(),
-  metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-});
+export const probeEvents = pgTable(
+  "probe_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    probeId: uuid("probe_id").notNull().references(() => probes.id, { onDelete: "cascade" }),
+    level: text("level", { enum: ["system", "pass", "warn", "fail", "error"] }).notNull(),
+    message: text("message").notNull(),
+    metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("probe_events_probe_created_at_idx").on(table.probeId, table.createdAt)]
+);
 
 export const probeMetrics = pgTable("probe_metrics", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -110,6 +121,13 @@ export const reports = pgTable("reports", {
   recommendedActions: jsonb("recommended_actions").notNull(),
   reportText: text("report_text").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

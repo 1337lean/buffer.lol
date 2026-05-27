@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SiteChrome } from "@/components/landing/SiteChrome";
+import { LandingEnhancements } from "@/components/landing/LandingEnhancements";
 
 const issueCards = [
   ["warn", "Stale manifest", "Player keeps requesting an old playlist window.", "Reports live edge drift and manifest age."],
   ["fail", "Slow first segment", "Startup hangs before the first playable chunk arrives.", "Reports first segment timing and route notes."],
   ["warn", "Edge cache miss", "One region falls back to origin under load.", "Reports CDN response spread by sampled edge."],
-  ["fail", "Transcode stuck", "Upload remains in processing with no publishable rendition.", "Reports queue stage and stalled duration."],
+  ["fail", "Manifest unavailable", "A player cannot load the entry playlist under launch traffic.", "Reports status, timing, and response headers."],
   ["warn", "Latency drift", "Viewer delay expands during a live event.", "Reports live latency and recovery behavior."],
   ["pass", "Bitrate ladder gap", "Missing mid-tier variant causes jarring quality jumps.", "Reports variant count and ladder spacing."]
 ];
@@ -15,7 +16,7 @@ const features = [
   ["▶", "Buffer testing", "Measure startup delay, rebuffer frequency, segment gaps, and bitrate changes across sample sessions."],
   ["ms", "Latency checks", "Monitor glass-to-glass delay, live edge distance, player drift, and recovery after network pressure."],
   ["↗", "CDN health", "Sample edge availability, cache status, response timing, and regional playback quality."],
-  ["↑", "Upload processing", "Follow ingest, transcoding, thumbnailing, packaging, and publish readiness in one timeline."]
+  ["hdr", "Manifest safety", "Catch unsafe redirects, oversized manifests, and blocked private-network targets before a run starts."]
 ];
 
 export default function HomePage() {
@@ -27,7 +28,7 @@ export default function HomePage() {
             <div className="eyebrow"><span className="live-dot" aria-hidden="true" />Media diagnostics workspace</div>
             <h1 id="hero-title">Find the buffer before viewers do.</h1>
             <p className="hero-lede">
-              buffer.lol tests live streams, uploads, and CDN paths from one clean workspace so media teams can catch latency spikes, stalled segments, and processing delays before they hit production.
+              buffer.lol tests live streams and CDN paths from one clean workspace so media teams can catch latency spikes, stalled segments, and delivery failures before they hit production.
             </p>
             <div className="hero-actions" aria-label="Account actions">
               <Link className="submit-btn" href="/signup"><span>Create account</span><ArrowIcon /></Link>
@@ -41,7 +42,7 @@ export default function HomePage() {
           </div>
 
           <div className="hero-visual" aria-label="buffer.lol media diagnostics preview">
-            <Image src="/assets/media-dashboard.png" width={1586} height={992} alt="Dark-mode buffer.lol dashboard preview showing video buffering, latency, CDN health, and upload processing panels." priority />
+            <Image src="/assets/media-dashboard.png" width={1586} height={992} alt="Dark-mode buffer.lol dashboard preview showing video buffering, latency, CDN health, and probe report panels." priority />
             <div className="visual-status">
               <button className="buffer-button" id="buffer-button" type="button" aria-label="Replay stream buffer test">
                 <svg className="buffer-svg" viewBox="0 0 120 120" aria-hidden="true">
@@ -69,12 +70,12 @@ export default function HomePage() {
 
           <div className="probe-workspace">
             <form className="probe-panel" id="probe-form" aria-label="Run a sample media probe">
-              <label htmlFor="probe-url">Stream or upload URL</label>
+              <label htmlFor="probe-url">Stream manifest URL</label>
               <input type="url" id="probe-url" name="probe-url" placeholder="https://example.com/live/master.m3u8" defaultValue="https://demo.buffer.lol/live/master.m3u8" required />
 
               <div className="probe-controls">
-                <label><span>Probe type</span><select id="probe-type" name="probe-type"><option>HLS</option><option>DASH</option><option>MP4</option><option>Upload</option></select></label>
-                <label><span>Region</span><select id="probe-region" name="probe-region"><option>US East</option><option>US West</option><option>EU West</option><option>APAC</option></select></label>
+                <label><span>Probe type</span><select id="probe-type" name="probe-type"><option>HLS</option><option>DASH</option></select></label>
+                <label><span>Requested region</span><select id="probe-region" name="probe-region"><option>US East</option><option>US West</option><option>EU West</option><option>APAC</option></select></label>
               </div>
 
               <button className="submit-btn probe-submit" id="probe-submit" type="submit">
@@ -114,7 +115,10 @@ export default function HomePage() {
                 <strong>Recommended next actions</strong>
                 <p>Run a sample probe to generate targeted follow-up steps.</p>
               </div>
-              <button className="text-action" id="copy-report" type="button">Copy report</button>
+              <button className="submit-btn report-action-button report-action-secondary" id="copy-report" type="button">
+                <span>Copy report</span>
+                <CopyIcon />
+              </button>
               <p className="form-feedback" id="copy-feedback" role="status" aria-live="polite" />
             </aside>
           </div>
@@ -129,7 +133,7 @@ export default function HomePage() {
         <section className="section split-section reveal-on-scroll" id="workflow">
           <div><span className="section-kicker">Workflow</span><h2>Run a media health check in minutes.</h2></div>
           <div className="workflow-list">
-            <article><span>01</span><h3>Point at a stream or upload</h3><p>Test HLS, DASH, MP4, or upload endpoints with the same repeatable probe setup.</p></article>
+            <article><span>01</span><h3>Point at a stream</h3><p>Test HLS and DASH manifests with the same repeatable probe setup.</p></article>
             <article><span>02</span><h3>Watch playback pressure</h3><p>Track startup time, rebuffer events, dropped frames, bitrate shifts, and latency drift.</p></article>
             <article><span>03</span><h3>Compare the delivery path</h3><p>See which CDN edges, regions, or processing steps are causing slow starts and failed playback.</p></article>
           </div>
@@ -141,7 +145,7 @@ export default function HomePage() {
             <div className="tab-list" role="tablist" aria-label="Media workflow use cases">
               {[
                 ["tab-live", "live", "Live streaming"],
-                ["tab-uploads", "uploads", "Upload pipelines"],
+                ["tab-manifests", "manifests", "Manifest health"],
                 ["tab-courses", "courses", "Course platforms"],
                 ["tab-creator", "creator", "Creator tools"],
                 ["tab-libraries", "libraries", "Internal media libraries"]
@@ -193,6 +197,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+      <LandingEnhancements />
 
       <div className="waitlist-modal" id="waitlist-modal" aria-hidden="true" inert>
         <div className="modal-backdrop" data-modal-close />
@@ -236,6 +241,15 @@ function WaitlistForm({ idPrefix }: { idPrefix: "" | "modal-" }) {
 
 function ArrowIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>;
+}
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 8h10v12H8z" />
+      <path d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </svg>
+  );
 }
 
 function ConsoleHeader({ title }: { title: string }) {

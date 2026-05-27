@@ -1,4 +1,19 @@
 function initBufferLol() {
+  const landingRoot = document.getElementById('main-content');
+  const isLandingPage = Boolean(document.querySelector('.hero-section') || document.getElementById('probe-form'));
+
+  if (!isLandingPage) {
+    revealCurrentLandingContent();
+    return;
+  }
+
+  if (landingRoot?.dataset.bufferLolInitialized === 'true') {
+    revealCurrentLandingContent();
+    return;
+  }
+
+  if (landingRoot) landingRoot.dataset.bufferLolInitialized = 'true';
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const consoleBody = document.getElementById('console-body');
   const revealItems = document.querySelectorAll('.reveal-on-scroll');
@@ -175,7 +190,7 @@ function initBufferLol() {
     ['[ok] segment buffer holding at 2.4s', 'success-line'],
     ['[sys] cdn edge iad-04 responded in 41ms', 'system-line'],
     ['[warn] live latency drift detected: +320ms', 'warn-line'],
-    ['[ok] upload transcode moved to packaging', 'success-line'],
+    ['[ok] DASH manifest variants sampled', 'success-line'],
     ['[sys] bitrate ladder switched to 1080p', 'system-line']
   ];
 
@@ -224,11 +239,10 @@ function initBufferLol() {
   function buildProbeRun() {
     const type = probeType ? probeType.value : 'HLS';
     const region = probeRegion ? probeRegion.value : 'US East';
-    const isUpload = type === 'Upload';
     const metrics = {
-      startupDelay: isUpload ? randomBetween(1.1, 4.8, 1) : randomBetween(0.8, 5.9, 1),
+      startupDelay: randomBetween(0.8, 5.9, 1),
       rebufferCount: Math.floor(randomBetween(0, 4.8)),
-      liveLatency: isUpload ? 0 : Math.floor(randomBetween(240, 920)),
+      liveLatency: Math.floor(randomBetween(240, 920)),
       manifestFetch: Math.floor(randomBetween(42, 280)),
       cdnResponse: Math.floor(randomBetween(28, 190)),
       bitrateVariants: Math.floor(randomBetween(3, 9.9))
@@ -378,23 +392,23 @@ function initBufferLol() {
       metrics: ['Live latency', 'Manifest age', 'Rebuffer count', 'CDN edge response'],
       failures: ['Stale manifest', 'Latency drift', 'Slow first segment']
     },
-    uploads: {
-      title: 'Upload pipelines',
-      copy: 'Follow ingest, transcode, packaging, thumbnails, and publish readiness with one sample timeline.',
-      metrics: ['Ingest duration', 'Transcode stage', 'Rendition count', 'Processing age'],
-      failures: ['Transcode stuck', 'Missing rendition', 'Thumbnail timeout']
+    manifests: {
+      title: 'Manifest health',
+      copy: 'Check public HLS and DASH manifests for delivery timing, redirects, and segment availability.',
+      metrics: ['Manifest fetch', 'Redirect safety', 'Segment samples', 'Variant availability'],
+      failures: ['Unsafe redirect', 'Oversized manifest', 'Missing segment']
     },
     courses: {
       title: 'Course platforms',
       copy: 'Check lesson startup and regional delivery before students run into broken playback.',
-      metrics: ['Startup delay', 'MP4 response', 'Captions present', 'Variant availability'],
+      metrics: ['Startup delay', 'Manifest response', 'Segment health', 'Variant availability'],
       failures: ['Slow lesson start', 'Caption mismatch', 'Expired asset URL']
     },
     creator: {
       title: 'Creator tools',
-      copy: 'Preview how newly uploaded media behaves before creators share it with their audience.',
-      metrics: ['Publish readiness', 'Poster generation', 'Playback status', 'Encoding ladder'],
-      failures: ['Processing delay', 'Poster missing', 'Ladder gap']
+      copy: 'Preview stream delivery health before creators share a live or scheduled event with their audience.',
+      metrics: ['Manifest response', 'Playback status', 'Live latency', 'Encoding ladder'],
+      failures: ['Slow manifest', 'Segment missing', 'Ladder gap']
     },
     libraries: {
       title: 'Internal media libraries',
@@ -641,8 +655,8 @@ function initBufferLol() {
     {
       id: 'seed_probe_2',
       createdAt: '2026-05-22T20:26:00.000Z',
-      url: 'https://demo.buffer.lol/uploads/sample.mp4',
-      type: 'MP4',
+      url: 'https://demo.buffer.lol/vod/manifest.mpd',
+      type: 'DASH',
       region: 'EU West',
       status: 'pass',
       durationMs: 3300,
@@ -722,7 +736,7 @@ function initBufferLol() {
     if (!diagnosticsQueue) return;
     const queue = [
       ['running', 'APAC HLS live-edge sample'],
-      ['pending', 'US West upload transcode replay'],
+      ['pending', 'US West DASH manifest replay'],
       ['completed', `${probes[0] ? probes[0].region : 'US East'} ${probes[0] ? probes[0].type : 'HLS'} report packaging`],
       ['pending', 'EU West CDN edge comparison']
     ];
@@ -908,6 +922,8 @@ function initBufferLol() {
     }
   });
 }
+
+window.initBufferLol = initBufferLol;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initBufferLol);

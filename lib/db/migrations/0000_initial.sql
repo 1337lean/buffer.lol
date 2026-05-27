@@ -48,7 +48,7 @@ create table if not exists probes (
   team_id uuid not null references teams(id) on delete cascade,
   created_by uuid not null references users(id) on delete cascade,
   url text not null,
-  probe_type text not null check (probe_type in ('hls', 'dash', 'mp4', 'upload')),
+  probe_type text not null check (probe_type in ('hls', 'dash')),
   region text not null,
   status text not null default 'queued' check (status in ('queued', 'running', 'pass', 'warn', 'fail', 'error')),
   summary text,
@@ -90,6 +90,13 @@ create table if not exists reports (
   recommended_actions jsonb not null,
   report_text text not null,
   created_at timestamptz not null default now()
+);
+
+create table if not exists rate_limit_buckets (
+  key text primary key,
+  count integer not null,
+  reset_at timestamptz not null,
+  updated_at timestamptz not null default now()
 );
 
 create index if not exists probes_team_created_at_idx on probes(team_id, created_at desc);

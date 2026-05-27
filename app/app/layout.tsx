@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireWorkspace } from "@/lib/auth";
+import { ProductNav } from "@/components/product/ProductNav";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,7 @@ export default async function ProductLayout({ children }: { children: React.Reac
           <span className="brand-mark" aria-hidden="true" />
           buffer<span className="brand-suffix">.lol</span>
         </Link>
-        <nav className="nav-links" aria-label="Workspace navigation">
-          <Link href="/app">Overview</Link>
-          <Link href="/app/probes">Probes</Link>
-          <Link href="/app/probes/new">New probe</Link>
-          <Link href="/app/settings/team">Team</Link>
-          <Link href="/app/settings/team/invites">Invites</Link>
-        </nav>
+        <ProductNav />
         <div className="product-team">
           <span>{workspace.teamName}</span>
           <a className="header-cta" href="/logout">Logout</a>

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { probeEvents, probeMetrics, probes, reports } from "@/lib/db/schema";
+import { ProbeReportActions } from "@/components/probes/ProbeReportActions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,9 @@ export default async function ProbeDetailPage({ params }: PageProps) {
   ]);
   const metrics = metricsRows[0];
   const report = reportRows[0];
+  const checks = normalizeChecks(report?.checks);
+  const actions = normalizeActions(report?.recommendedActions);
+  const reportText = report?.reportText || "Diagnostics are queued. Refresh this page to see worker events, metrics, and report checks as they arrive.";
 
   return (
     <main className="product-main" id="main-content">
@@ -50,7 +54,7 @@ export default async function ProbeDetailPage({ params }: PageProps) {
           <div className="console-body">
             {events.length ? events.map((event) => (
               <div className={`console-line ${event.level === "error" || event.level === "fail" ? "warn-line" : event.level === "pass" ? "success-line" : "system-line"}`} key={event.id}>
-                [{event.level}] {event.message}
+                [{formatDateTime(event.createdAt)}] [{event.level}] {event.message}
               </div>
             )) : <div className="console-line system-line">[sys] waiting for worker events</div>}
           </div>
@@ -64,10 +68,70 @@ export default async function ProbeDetailPage({ params }: PageProps) {
             </div>
             <span className={`status-pill status-${report?.status || probe.status}`}>{report?.status || probe.status}</span>
           </div>
-          <p className="report-text">{report?.reportText || "The worker is not connected yet. This run has been persisted and is ready for Phase 4 processing."}</p>
-          <Link className="text-action" href="/app/probes">Back to history</Link>
+          {checks.length ? (
+            <ul className="report-checks report-check-table">
+              {checks.map((check) => (
+                <li key={`${check.label}-${check.detail}`}>
+                  <span className={check.status}>{check.status}</span>
+                  <div>
+                    <strong>{check.label}</strong>
+                    <p>{check.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="report-text">{reportText}</p>
+          )}
+          {actions.length ? (
+            <div className="report-actions-list">
+              <strong>Recommended next actions</strong>
+              <ul>
+                {actions.map((action) => <li key={action}>{action}</li>)}
+              </ul>
+            </div>
+          ) : null}
+          <ProbeReportActions reportText={reportText} url={probe.url} probeType={probe.probeType} region={probe.region} />
+          <Link className="submit-btn report-action-button report-action-secondary report-back-action" href="/app/probes">
+            <span>Back to history</span>
+            <BackIcon />
+          </Link>
         </aside>
       </section>
     </main>
   );
+}
+
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19 12H5" />
+      <path d="m11 6-6 6 6 6" />
+    </svg>
+  );
+}
+
+function normalizeChecks(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const check = item as Record<string, unknown>;
+    if (typeof check.status !== "string" || typeof check.label !== "string" || typeof check.detail !== "string") return [];
+    if (!["pass", "warn", "fail"].includes(check.status)) return [];
+    return [{ status: check.status as "pass" | "warn" | "fail", label: check.label, detail: check.detail }];
+  });
+}
+
+function normalizeActions(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function formatDateTime(value: Date) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(value);
 }

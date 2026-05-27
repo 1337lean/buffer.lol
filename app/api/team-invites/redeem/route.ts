@@ -32,12 +32,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "That invite is restricted to another email address." }, { status: 403 });
   }
 
-  await db.insert(teamMembers).values({
-    teamId: invite.teamId,
-    userId: user.id,
-    role: invite.role
+  await db.transaction(async (tx) => {
+    await tx.insert(teamMembers).values({
+      teamId: invite.teamId,
+      userId: user.id,
+      role: invite.role
+    });
+    await tx.update(teamInvites).set({ usedAt: new Date(), usedBy: user.id }).where(eq(teamInvites.id, invite.id));
   });
-  await db.update(teamInvites).set({ usedAt: new Date(), usedBy: user.id }).where(eq(teamInvites.id, invite.id));
 
   return NextResponse.json({ ok: true });
 }

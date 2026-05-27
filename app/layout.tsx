@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,11 +8,11 @@ export const metadata: Metadata = {
     template: "%s | buffer.lol"
   },
   description:
-    "buffer.lol helps media teams test stream buffering, video latency, CDN edge health, and upload processing from one modern diagnostics workspace.",
+    "buffer.lol helps media teams test stream buffering, video latency, and CDN edge health from one modern diagnostics workspace.",
   openGraph: {
     title: "buffer.lol",
     description:
-      "A modern diagnostics workspace for stream buffering, video latency, CDN health, and upload processing.",
+      "A modern diagnostics workspace for stream buffering, video latency, and CDN health.",
     type: "website",
     url: "https://buffer.lol/",
     images: [
@@ -29,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "buffer.lol",
     description:
-      "A modern diagnostics workspace for stream buffering, video latency, CDN health, and upload processing.",
+      "A modern diagnostics workspace for stream buffering, video latency, and CDN health.",
     images: ["/assets/media-dashboard.png"]
   },
   icons: {
@@ -50,7 +49,6 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
-        <Script src="/app.js" strategy="afterInteractive" />
       </body>
     </html>
   );

@@ -34,10 +34,15 @@ export async function POST(request: NextRequest) {
   const workspace = await getCurrentWorkspace(auth.id);
   if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
-  const userLimit = checkRateLimit(`probe:user:${auth.id}`, 20, 60 * 60 * 1000);
-  const teamLimit = checkRateLimit(`probe:team:${workspace.teamId}`, 80, 60 * 60 * 1000);
+  const [userLimit, teamLimit] = await Promise.all([
+    checkRateLimit(`probe:user:${auth.id}`, 20, 60 * 60 * 1000),
+    checkRateLimit(`probe:team:${workspace.teamId}`, 80, 60 * 60 * 1000)
+  ]);
   if (!userLimit.allowed || !teamLimit.allowed) {
-    return NextResponse.json({ error: "Probe rate limit reached. Try again later." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Probe rate limit reached. Try again later.", resetAt: Math.max(userLimit.resetAt, teamLimit.resetAt) },
+      { status: 429 }
+    );
   }
 
   const parsed = probeInputSchema.safeParse(await request.json());
@@ -53,27 +58,36 @@ export async function POST(request: NextRequest) {
   }
 
   const db = getDb();
-  const [probe] = await db
-    .insert(probes)
-    .values({
-      teamId: workspace.teamId,
-      createdBy: auth.id,
-      url: safeUrl,
-      probeType: parsed.data.probeType,
-      region: parsed.data.region,
-      status: "queued",
-      summary: "Probe queued for diagnostics."
-    })
-    .returning();
+  const probe = await db.transaction(async (tx) => {
+    const [createdProbe] = await tx
+      .insert(probes)
+      .values({
+        teamId: workspace.teamId,
+        createdBy: auth.id,
+        url: safeUrl,
+        probeType: parsed.data.probeType,
+        region: parsed.data.region,
+        status: "queued",
+        summary: "Probe queued for diagnostics."
+      })
+      .returning();
 
-  await db.insert(probeEvents).values({
-    probeId: probe.id,
-    level: "system",
-    message: "Probe queued.",
-    metadata: { queueProvider: process.env.QUEUE_PROVIDER || "inline" }
+    await tx.insert(probeEvents).values({
+      probeId: createdProbe.id,
+      level: "system",
+      message: "Probe queued.",
+      metadata: { queueProvider: process.env.QUEUE_PROVIDER || "inline" }
+    });
+
+    return createdProbe;
   });
 
-  await enqueueProbe(probe.id);
+  const enqueueResult = await enqueueProbe(probe.id);
+  if (!enqueueResult.enqueued) {
+    await db.update(probes).set({ status: "error", summary: "Probe queue is not configured." }).where(eq(probes.id, probe.id));
+    return NextResponse.json({ error: "Probe queue is not configured." }, { status: 503 });
+  }
+
   trackServerEvent("probe_created", { probeId: probe.id, probeType: probe.probeType, region: probe.region });
 
   return NextResponse.json({ probeId: probe.id }, { status: 201 });

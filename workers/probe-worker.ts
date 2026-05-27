@@ -3,12 +3,15 @@ import { getDb } from "@/lib/db/client";
 import { probeEvents, probeMetrics, probes, reports, users } from "@/lib/db/schema";
 import { logError, logInfo } from "@/lib/observability/log";
 import { validateProbeUrl } from "@/lib/probes/validate-url";
+import { decodeText, safeFetch } from "@/lib/probes/safe-fetch";
 import { sendProbeCompletedEmail } from "@/lib/notifications/email";
 import { trackServerEvent } from "@/lib/analytics/events";
 
 const MANIFEST_TIMEOUT_MS = 8000;
 const SEGMENT_TIMEOUT_MS = 7000;
 const MAX_SAMPLE_SEGMENTS = 3;
+const MAX_MANIFEST_BYTES = 512 * 1024;
+const MAX_SAMPLE_BYTES = 64 * 1024;
 
 type HeaderMap = Record<string, string | null>;
 
@@ -50,38 +53,72 @@ export async function processProbe(probeId: string) {
       ? await inspectDash(probe.id, manifest)
       : await inspectHls(probe.id, manifest);
 
-    await db.insert(probeMetrics).values({
-      probeId: probe.id,
-      manifestFetchMs: manifest.ms,
-      firstSegmentFetchMs: result.firstSegmentFetchMs,
-      cdnResponseMs: result.cdnResponseMs,
-      liveLatencyMs: result.liveLatencyMs,
-      rebufferCount: result.rebufferCount,
-      bitrateVariantCount: result.variantCount,
-      segmentCountSampled: result.segmentCount,
-      metadata: {
-        manifest: {
-          url: manifest.url,
-          bytes: manifest.bytes,
-          headers: manifest.headers
-        },
-        samples: result.samples
-      }
-    });
+    await db
+      .insert(probeMetrics)
+      .values({
+        probeId: probe.id,
+        manifestFetchMs: manifest.ms,
+        firstSegmentFetchMs: result.firstSegmentFetchMs,
+        cdnResponseMs: result.cdnResponseMs,
+        liveLatencyMs: result.liveLatencyMs,
+        rebufferCount: result.rebufferCount,
+        bitrateVariantCount: result.variantCount,
+        segmentCountSampled: result.segmentCount,
+        metadata: {
+          manifest: {
+            url: manifest.url,
+            bytes: manifest.bytes,
+            headers: manifest.headers
+          },
+          samples: result.samples
+        }
+      })
+      .onConflictDoUpdate({
+        target: probeMetrics.probeId,
+        set: {
+          manifestFetchMs: manifest.ms,
+          firstSegmentFetchMs: result.firstSegmentFetchMs,
+          cdnResponseMs: result.cdnResponseMs,
+          liveLatencyMs: result.liveLatencyMs,
+          rebufferCount: result.rebufferCount,
+          bitrateVariantCount: result.variantCount,
+          segmentCountSampled: result.segmentCount,
+          metadata: {
+            manifest: {
+              url: manifest.url,
+              bytes: manifest.bytes,
+              headers: manifest.headers
+            },
+            samples: result.samples
+          }
+        }
+      });
 
     const status = classify(result.checks);
     const title = titleForStatus(status, result.checks);
     const actions = actionsForStatus(status);
     const reportText = buildReportText({ status, title, probeType: probe.probeType, url: probe.url, checks: result.checks, actions });
 
-    await db.insert(reports).values({
-      probeId: probe.id,
-      status,
-      title,
-      checks: result.checks,
-      recommendedActions: actions,
-      reportText
-    });
+    await db
+      .insert(reports)
+      .values({
+        probeId: probe.id,
+        status,
+        title,
+        checks: result.checks,
+        recommendedActions: actions,
+        reportText
+      })
+      .onConflictDoUpdate({
+        target: reports.probeId,
+        set: {
+          status,
+          title,
+          checks: result.checks,
+          recommendedActions: actions,
+          reportText
+        }
+      });
 
     await db.update(probes).set({ status, summary: title, completedAt: new Date() }).where(eq(probes.id, probe.id));
     await addEvent(probe.id, status === "pass" ? "pass" : status, `Report generated: ${title}`);
@@ -169,57 +206,44 @@ async function inspectDash(probeId: string, manifest: FetchResult) {
 }
 
 async function fetchText(url: string, timeoutMs: number): Promise<FetchResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const started = performance.now();
-  try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": "buffer.lol diagnostics/1.0",
-        accept: "application/vnd.apple.mpegurl, application/dash+xml, text/plain, */*"
-      }
-    });
-    const text = await response.text();
-    return {
-      url: response.url,
-      status: response.status,
-      ok: response.ok,
-      ms: Math.round(performance.now() - started),
-      text,
-      bytes: new TextEncoder().encode(text).length,
-      headers: pickHeaders(response.headers)
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+  const { response, url: finalUrl, bytes } = await safeFetch(url, {
+    timeoutMs,
+    maxBytes: MAX_MANIFEST_BYTES,
+    headers: {
+      "user-agent": "buffer.lol diagnostics/1.0",
+      accept: "application/vnd.apple.mpegurl, application/dash+xml, text/plain, */*"
+    }
+  });
+  const text = decodeText(bytes);
+  return {
+    url: finalUrl,
+    status: response.status,
+    ok: response.ok,
+    ms: Math.round(performance.now() - started),
+    text,
+    bytes: bytes.byteLength,
+    headers: pickHeaders(response.headers)
+  };
 }
 
 async function fetchSample(url: string) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
   const started = performance.now();
-  try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": "buffer.lol diagnostics/1.0",
-        range: "bytes=0-65535"
-      }
-    });
-    await response.arrayBuffer();
-    return {
-      url: response.url,
-      status: response.status,
-      ok: response.ok || response.status === 206,
-      ms: Math.round(performance.now() - started),
-      headers: pickHeaders(response.headers)
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+  const { response, url: finalUrl } = await safeFetch(url, {
+    timeoutMs: SEGMENT_TIMEOUT_MS,
+    maxBytes: MAX_SAMPLE_BYTES,
+    headers: {
+      "user-agent": "buffer.lol diagnostics/1.0",
+      range: "bytes=0-65535"
+    }
+  });
+  return {
+    url: finalUrl,
+    status: response.status,
+    ok: response.ok || response.status === 206,
+    ms: Math.round(performance.now() - started),
+    headers: pickHeaders(response.headers)
+  };
 }
 
 async function sampleUrls(probeId: string, urls: string[]) {
@@ -355,13 +379,25 @@ async function addEvent(probeId: string, level: "system" | "pass" | "warn" | "fa
 async function finishWithError(probeId: string, message: string) {
   const db = getDb();
   await addEvent(probeId, "error", message);
-  await db.insert(reports).values({
-    probeId,
-    status: "error",
-    title: "Probe failed before diagnostics completed",
-    checks: [{ status: "fail", label: "Worker execution", detail: message }],
-    recommendedActions: ["Confirm the URL is publicly reachable.", "Retry after checking origin and CDN access."],
-    reportText: `buffer.lol report (ERROR)\n${message}`
-  });
+  await db
+    .insert(reports)
+    .values({
+      probeId,
+      status: "error",
+      title: "Probe failed before diagnostics completed",
+      checks: [{ status: "fail", label: "Worker execution", detail: message }],
+      recommendedActions: ["Confirm the URL is publicly reachable.", "Retry after checking origin and CDN access."],
+      reportText: `buffer.lol report (ERROR)\n${message}`
+    })
+    .onConflictDoUpdate({
+      target: reports.probeId,
+      set: {
+        status: "error",
+        title: "Probe failed before diagnostics completed",
+        checks: [{ status: "fail", label: "Worker execution", detail: message }],
+        recommendedActions: ["Confirm the URL is publicly reachable.", "Retry after checking origin and CDN access."],
+        reportText: `buffer.lol report (ERROR)\n${message}`
+      }
+    });
   await db.update(probes).set({ status: "error", summary: message, completedAt: new Date() }).where(eq(probes.id, probeId));
 }

@@ -12,9 +12,12 @@ const waitlistSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimit = checkRateLimit(`waitlist:${ip}`, 8, 60 * 60 * 1000);
+  const rateLimit = await checkRateLimit(`waitlist:${ip}`, 8, 60 * 60 * 1000);
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Too many requests. Try again later.", resetAt: rateLimit.resetAt },
+      { status: 429 }
+    );
   }
 
   const payload = await readPayload(request);

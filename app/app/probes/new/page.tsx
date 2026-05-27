@@ -9,7 +9,7 @@ export default function NewProbePage() {
         <div>
           <span className="section-kicker">New probe</span>
           <h1>Queue a URL probe.</h1>
-          <p>Submit an HLS or DASH URL. Phase 3 persists the queued run while the worker remains stubbed.</p>
+          <p>Submit a public HLS or DASH manifest. Private networks, unsafe redirects, and oversized responses are rejected before diagnostics run.</p>
         </div>
       </section>
       <section className="probe-workspace product-new-probe">
@@ -24,8 +24,8 @@ export default function NewProbePage() {
           </div>
           <ul className="report-checks">
             <li><span>Block</span>Localhost, private IP ranges, and link-local networks are rejected.</li>
-            <li><span>Queue</span>Rows are stored as queued probes before worker execution.</li>
-            <li><span>Next</span>The worker will fetch manifests and write metrics in Phase 4.</li>
+            <li><span>Queue</span>Runs are persisted before worker execution.</li>
+            <li><span>Report</span>Completed diagnostics write structured checks, events, and metrics.</li>
           </ul>
         </aside>
       </section>
