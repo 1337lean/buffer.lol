@@ -17,15 +17,55 @@ function initBufferLol() {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const consoleBody = document.getElementById('console-body');
   const revealItems = document.querySelectorAll('.reveal-on-scroll');
+  const animatedCountUps = new WeakSet();
+
+  function formatCountUpValue(element, value) {
+    const decimals = Number(element.dataset.countDecimals || 0);
+    const prefix = element.dataset.countPrefix || '';
+    const suffix = element.dataset.countSuffix || '';
+    return `${prefix}${value.toFixed(decimals)}${suffix}`;
+  }
+
+  function animateCountUps(scope) {
+    const counters = scope.querySelectorAll ? scope.querySelectorAll('[data-count-target]') : [];
+    counters.forEach((counter) => {
+      if (animatedCountUps.has(counter)) return;
+      animatedCountUps.add(counter);
+
+      const target = Number(counter.dataset.countTarget);
+      if (!Number.isFinite(target)) return;
+
+      if (prefersReducedMotion) {
+        counter.textContent = formatCountUpValue(counter, target);
+        return;
+      }
+
+      const startTime = performance.now();
+      const duration = 950;
+
+      function tick(now) {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        counter.textContent = formatCountUpValue(counter, target * eased);
+        if (progress < 1) window.requestAnimationFrame(tick);
+      }
+
+      window.requestAnimationFrame(tick);
+    });
+  }
 
   if (revealItems.length) {
     if (prefersReducedMotion || !('IntersectionObserver' in window)) {
-      revealItems.forEach((item) => item.classList.add('is-visible'));
+      revealItems.forEach((item) => {
+        item.classList.add('is-visible');
+        animateCountUps(item);
+      });
     } else {
       const revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
           entry.target.classList.add('is-visible');
+          animateCountUps(entry.target);
           observer.unobserve(entry.target);
         });
       }, {
@@ -41,9 +81,10 @@ function initBufferLol() {
     if (!consoleBody) return;
 
     const line = document.createElement('div');
-    line.className = `console-line ${className}`;
+    line.className = `console-line ${className} is-new`;
     line.textContent = text;
     consoleBody.appendChild(line);
+    window.setTimeout(() => line.classList.remove('is-new'), 360);
 
     if (consoleBody.children.length > 18) {
       consoleBody.removeChild(consoleBody.firstElementChild);
@@ -225,9 +266,10 @@ function initBufferLol() {
   function addProbeLine(text, className = 'system-line') {
     if (!probeLog) return;
     const line = document.createElement('div');
-    line.className = `console-line ${className}`;
+    line.className = `console-line ${className} is-new`;
     line.textContent = text;
     probeLog.appendChild(line);
+    window.setTimeout(() => line.classList.remove('is-new'), 360);
     probeLog.scrollTop = probeLog.scrollHeight;
   }
 
@@ -425,8 +467,11 @@ function initBufferLol() {
   const useCaseFailures = document.getElementById('use-case-failures');
   const useCasePanel = document.getElementById('use-case-panel');
 
-  function renderUseCase(key, focusButton = false) {
+  function renderUseCase(key, focusButton = false, animatePanel = true) {
     const item = useCases[key] || useCases.live;
+    if (useCasePanel && animatePanel && !prefersReducedMotion) {
+      useCasePanel.classList.add('is-switching');
+    }
     if (useCaseTitle) useCaseTitle.textContent = item.title;
     if (useCaseCopy) useCaseCopy.textContent = item.copy;
     if (useCaseMetrics) useCaseMetrics.innerHTML = item.metrics.map((metric) => `<li>${metric}</li>`).join('');
@@ -439,6 +484,11 @@ function initBufferLol() {
       if (active && useCasePanel) useCasePanel.setAttribute('aria-labelledby', button.id);
       if (active && focusButton) button.focus();
     });
+    if (useCasePanel && animatePanel && !prefersReducedMotion) {
+      window.requestAnimationFrame(() => {
+        useCasePanel.classList.remove('is-switching');
+      });
+    }
   }
 
   tabButtons.forEach((button) => {
@@ -461,7 +511,7 @@ function initBufferLol() {
       renderUseCase(buttons[nextIndex].dataset.useCase, true);
     });
   });
-  renderUseCase('live');
+  renderUseCase('live', false, false);
 
   const canvas = document.getElementById('particle-canvas');
   if (canvas && !prefersReducedMotion) {

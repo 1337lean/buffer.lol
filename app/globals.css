@@ -288,6 +288,7 @@ main,
   border-radius: 50%;
   background: var(--blue);
   box-shadow: 0 0 18px rgba(96, 165, 250, 0.75);
+  animation: live-dot-pulse 2.4s ease-in-out infinite;
 }
 
 h1,
@@ -376,6 +377,14 @@ h3 {
   transform: translateY(-1px);
 }
 
+.submit-btn svg {
+  transition: transform 0.22s ease;
+}
+
+.submit-btn:hover svg {
+  transform: translateX(3px);
+}
+
 .submit-btn:disabled {
   cursor: wait;
   opacity: 0.72;
@@ -438,8 +447,23 @@ h3 {
 
 .hero-visual {
   position: relative;
+  overflow: hidden;
   min-width: 0;
   transition: transform 0.24s ease, filter 0.24s ease;
+}
+
+.hero-visual::after {
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  content: "";
+  border-radius: 8px;
+  background: linear-gradient(180deg, transparent 0%, rgba(56, 189, 248, 0.02) 44%, rgba(56, 189, 248, 0.26) 50%, rgba(56, 189, 248, 0.02) 56%, transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  pointer-events: none;
+  transform: translateY(-100%);
+  animation: dashboard-scanline 7.5s ease-in-out 1.2s infinite;
 }
 
 .hero-visual:hover {
@@ -469,6 +493,7 @@ h3 {
   position: absolute;
   right: clamp(1rem, 3vw, 2rem);
   bottom: clamp(1rem, 3vw, 2rem);
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -547,6 +572,33 @@ h3 {
   stroke-dasharray: 327;
   stroke-dashoffset: 327;
   transition: stroke-dashoffset 0.35s ease;
+}
+
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+    box-shadow: 0 0 14px rgba(96, 165, 250, 0.58);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scale(1.24);
+    box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.12), 0 0 24px rgba(96, 165, 250, 0.86);
+  }
+}
+
+@keyframes dashboard-scanline {
+  0%,
+  36% {
+    transform: translateY(-100%);
+  }
+
+  68%,
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 .status-label {
@@ -857,6 +909,8 @@ table,
 }
 
 .probe-stages span {
+  position: relative;
+  overflow: hidden;
   min-height: 3.2rem;
   padding: 0.65rem;
   border: 1px solid var(--line);
@@ -869,6 +923,15 @@ table,
   color: var(--text);
   border-color: rgba(56, 189, 248, 0.56);
   box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.16);
+}
+
+.probe-stages span.is-active::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(110deg, transparent 0%, rgba(56, 189, 248, 0.18) 46%, transparent 68%);
+  transform: translateX(-100%);
+  animation: probe-stage-sweep 1.15s ease-in-out infinite;
 }
 
 .probe-stages span.is-complete {
@@ -1073,6 +1136,12 @@ table,
   grid-template-columns: 0.85fr 1.15fr;
   gap: 1.5rem;
   padding: 1.25rem;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.tab-panel.is-switching {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 .tab-panel h3 {
@@ -1115,6 +1184,13 @@ table,
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.issue-grid article:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+  box-shadow: 0 18px 46px rgba(37, 99, 235, 0.14);
+  transform: translateY(-3px);
 }
 
 .issue-grid h3 {
@@ -1148,10 +1224,12 @@ table,
 
 .severity.warn {
   color: #f4bd63;
+  animation: severity-warn-pulse 3.4s ease-in-out infinite;
 }
 
 .severity.fail {
   color: var(--blue-light);
+  animation: severity-fail-pulse 3.1s ease-in-out infinite;
 }
 
 .integration-strip {
@@ -1295,6 +1373,50 @@ table,
 
 .console-line {
   margin-bottom: 0.42rem;
+}
+
+.console-line.is-new {
+  animation: console-line-in 0.32s ease both;
+}
+
+@keyframes probe-stage-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes severity-warn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(245, 158, 11, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.18);
+  }
+}
+
+@keyframes severity-fail-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
+  }
+}
+
+@keyframes console-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .system-line {

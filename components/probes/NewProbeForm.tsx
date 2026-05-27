@@ -32,8 +32,9 @@ export function NewProbeForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, probeType, region })
       });
-      const payload = await response.json();
+      const payload = await readProbeResponse(response);
       if (!response.ok) throw new Error(payload.error || "Could not queue probe.");
+      if (!payload.probeId) throw new Error("Probe was queued, but the response was missing its ID.");
       window.location.assign(`/app/probes/${payload.probeId}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not queue probe.");
@@ -67,4 +68,25 @@ export function NewProbeForm() {
       <p className="form-feedback" role="status" aria-live="polite">{message}</p>
     </form>
   );
+}
+
+async function readProbeResponse(response: Response): Promise<{ error?: string; probeId?: string }> {
+  const text = await response.text();
+  if (!text.trim()) {
+    return {
+      error: response.ok
+        ? "The server returned an empty response."
+        : `Could not queue probe. Server returned ${response.status}.`
+    };
+  }
+
+  try {
+    return JSON.parse(text) as { error?: string; probeId?: string };
+  } catch {
+    return {
+      error: response.ok
+        ? "The server returned an unreadable response."
+        : `Could not queue probe. Server returned ${response.status}.`
+    };
+  }
 }

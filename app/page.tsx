@@ -125,9 +125,9 @@ export default function HomePage() {
         </section>
 
         <section className="metrics-strip reveal-on-scroll" aria-label="Media diagnostics metrics">
-          <div><strong>2.4s</strong><span>startup buffer target</span></div>
-          <div><strong>18</strong><span>edge regions sampled</span></div>
-          <div><strong>&lt;450ms</strong><span>glass-to-glass target</span></div>
+          <div><strong data-count-target="2.4" data-count-decimals="1" data-count-suffix="s">2.4s</strong><span>startup buffer target</span></div>
+          <div><strong data-count-target="18">18</strong><span>edge regions sampled</span></div>
+          <div><strong data-count-target="450" data-count-prefix="&lt;" data-count-suffix="ms">&lt;450ms</strong><span>glass-to-glass target</span></div>
         </section>
 
         <section className="section split-section reveal-on-scroll" id="workflow">
