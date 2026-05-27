@@ -10,12 +10,16 @@ import {
   uuid
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey(),
-  email: text("email").notNull(),
-  name: text("name"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey(),
+    email: text("email").notNull(),
+    name: text("name"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("users_created_at_idx").on(table.createdAt)]
+);
 
 export const teams = pgTable("teams", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -58,13 +62,17 @@ export const teamInvites = pgTable(
   ]
 );
 
-export const waitlistEntries = pgTable("waitlist_entries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
-  source: text("source").notNull(),
-  status: text("status", { enum: ["new", "contacted", "invited", "converted"] }).notNull().default("new"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-});
+export const waitlistEntries = pgTable(
+  "waitlist_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull().unique(),
+    source: text("source").notNull(),
+    status: text("status", { enum: ["new", "contacted", "invited", "converted"] }).notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("waitlist_entries_created_at_idx").on(table.createdAt)]
+);
 
 export const probes = pgTable(
   "probes",
@@ -81,7 +89,11 @@ export const probes = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
-  (table) => [index("probes_team_created_at_idx").on(table.teamId, table.createdAt)]
+  (table) => [
+    index("probes_team_created_at_idx").on(table.teamId, table.createdAt),
+    index("probes_created_at_idx").on(table.createdAt),
+    index("probes_status_created_at_idx").on(table.status, table.createdAt)
+  ]
 );
 
 export const probeEvents = pgTable(

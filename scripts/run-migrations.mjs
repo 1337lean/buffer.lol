@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const migrationsDir = join(root, "lib/db/migrations");
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
@@ -14,8 +15,22 @@ if (!databaseUrl) {
 const sql = postgres(databaseUrl, { max: 1, prepare: false });
 
 try {
-  const migration = await readFile(join(root, "lib/db/migrations/0000_initial.sql"), "utf8");
-  await sql.unsafe(migration);
+  const migrationFiles = (await readdir(migrationsDir))
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+
+  for (const file of migrationFiles) {
+    const migration = await readFile(join(migrationsDir, file), "utf8");
+    const statements = migration
+      .split(";")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+
+    for (const statement of statements) {
+      await sql.unsafe(`${statement};`);
+    }
+  }
+
   console.log("Database schema is ready.");
 } finally {
   await sql.end();
