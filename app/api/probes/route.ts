@@ -102,7 +102,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ probeId: probe.id }, { status: 201 });
   } catch (error) {
     logError("probe queue request failed", error);
-    return NextResponse.json({ error: "Could not queue probe." }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Could not queue probe.";
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "production" ? "Could not queue probe." : message },
+      { status: 500 }
+    );
   }
 }
 

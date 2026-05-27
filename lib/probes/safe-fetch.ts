@@ -14,11 +14,19 @@ export type SafeFetchResult = {
   response: Response;
   url: string;
   bytes: Uint8Array;
+  redirects: RedirectHop[];
+};
+
+export type RedirectHop = {
+  from: string;
+  to: string;
+  status: number;
 };
 
 export async function safeFetch(url: string, options: SafeFetchOptions): Promise<SafeFetchResult> {
   const redirectLimit = options.redirectLimit ?? 4;
   let currentUrl = new URL(url);
+  const redirects: RedirectHop[] = [];
 
   for (let redirectCount = 0; redirectCount <= redirectLimit; redirectCount += 1) {
     await assertSafeProbeUrl(currentUrl);
@@ -26,17 +34,19 @@ export async function safeFetch(url: string, options: SafeFetchOptions): Promise
 
     if (!REDIRECT_STATUSES.has(response.status)) {
       const bytes = await readLimitedBody(response, options.maxBytes);
-      return { response, url: response.url || currentUrl.toString(), bytes };
+      return { response, url: response.url || currentUrl.toString(), bytes, redirects };
     }
 
     const location = response.headers.get("location");
     await response.body?.cancel();
     if (!location) {
       const bytes = new Uint8Array();
-      return { response, url: response.url || currentUrl.toString(), bytes };
+      return { response, url: response.url || currentUrl.toString(), bytes, redirects };
     }
 
-    currentUrl = new URL(location, currentUrl);
+    const nextUrl = new URL(location, currentUrl);
+    redirects.push({ from: currentUrl.toString(), to: nextUrl.toString(), status: response.status });
+    currentUrl = nextUrl;
   }
 
   throw new Error("Probe URL redirected too many times.");

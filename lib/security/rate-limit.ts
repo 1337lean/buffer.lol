@@ -14,7 +14,7 @@ export async function checkRateLimit(key: string, limit: number, windowMs: numbe
   }
 
   const db = getDb();
-  const resetAt = new Date(Date.now() + windowMs);
+  const resetAt = new Date(Date.now() + windowMs).toISOString();
   const rows = await db.execute(sql`
     insert into rate_limit_buckets as bucket (key, count, reset_at, updated_at)
     values (${key}, 1, ${resetAt}, now())

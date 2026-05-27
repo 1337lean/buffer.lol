@@ -15,7 +15,7 @@ const probeTypes = [
 ];
 
 export function NewProbeForm() {
-  const [url, setUrl] = useState("https://demo.buffer.lol/live/master.m3u8");
+  const [url, setUrl] = useState("https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8");
   const [probeType, setProbeType] = useState("hls");
   const [region, setRegion] = useState("us-east");
   const [message, setMessage] = useState("");

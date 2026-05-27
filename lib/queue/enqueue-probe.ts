@@ -1,5 +1,5 @@
 import { processProbe } from "@/workers/probe-worker";
-import { logInfo } from "@/lib/observability/log";
+import { logError, logInfo } from "@/lib/observability/log";
 
 export async function enqueueProbe(probeId: string) {
   const provider = process.env.QUEUE_PROVIDER || "inline";
@@ -11,8 +11,13 @@ export async function enqueueProbe(probeId: string) {
     }
 
     logInfo("processing probe inline", { probeId, provider });
-    await processProbe(probeId);
-    return { provider, enqueued: true, processedInline: true };
+    try {
+      await processProbe(probeId);
+      return { provider, enqueued: true, processedInline: true };
+    } catch (error) {
+      logError("inline probe processing failed after enqueue", error, { probeId, provider });
+      return { provider, enqueued: true, processedInline: false };
+    }
   }
 
   if (provider === "database") {

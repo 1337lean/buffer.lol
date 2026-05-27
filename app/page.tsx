@@ -69,9 +69,9 @@ export default function HomePage() {
           </div>
 
           <div className="probe-workspace">
-            <form className="probe-panel" id="probe-form" aria-label="Run a sample media probe">
+            <form className="probe-panel" id="probe-form" aria-label="Simulate a sample media probe">
               <label htmlFor="probe-url">Stream manifest URL</label>
-              <input type="url" id="probe-url" name="probe-url" placeholder="https://example.com/live/master.m3u8" defaultValue="https://demo.buffer.lol/live/master.m3u8" required />
+              <input type="url" id="probe-url" name="probe-url" placeholder="https://example.com/live/master.m3u8" defaultValue="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8" required />
 
               <div className="probe-controls">
                 <label><span>Probe type</span><select id="probe-type" name="probe-type"><option>HLS</option><option>DASH</option></select></label>
@@ -79,7 +79,7 @@ export default function HomePage() {
               </div>
 
               <button className="submit-btn probe-submit" id="probe-submit" type="submit">
-                <span>Run probe</span><ArrowIcon />
+                <span>Simulate probe</span><ArrowIcon />
               </button>
             </form>
 
@@ -113,7 +113,7 @@ export default function HomePage() {
               </ul>
               <div className="report-actions-list" id="report-actions-list">
                 <strong>Recommended next actions</strong>
-                <p>Run a sample probe to generate targeted follow-up steps.</p>
+                <p>Simulate a sample probe to generate targeted follow-up steps.</p>
               </div>
               <button className="submit-btn report-action-button report-action-secondary" id="copy-report" type="button">
                 <span>Copy report</span>

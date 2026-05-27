@@ -4,6 +4,7 @@ import { probeEvents, probeMetrics, probes, reports, users } from "@/lib/db/sche
 import { logError, logInfo } from "@/lib/observability/log";
 import { validateProbeUrl } from "@/lib/probes/validate-url";
 import { decodeText, safeFetch } from "@/lib/probes/safe-fetch";
+import type { RedirectHop } from "@/lib/probes/safe-fetch";
 import { sendProbeCompletedEmail } from "@/lib/notifications/email";
 import { trackServerEvent } from "@/lib/analytics/events";
 
@@ -23,6 +24,18 @@ type FetchResult = {
   text: string;
   bytes: number;
   headers: HeaderMap;
+  redirects: RedirectHop[];
+};
+
+type SampleResult = {
+  url: string;
+  status: number;
+  ok: boolean;
+  ms: number;
+  headers: HeaderMap;
+  bytes?: number;
+  redirects?: RedirectHop[];
+  error?: string;
 };
 
 type Check = {
@@ -68,7 +81,8 @@ export async function processProbe(probeId: string) {
           manifest: {
             url: manifest.url,
             bytes: manifest.bytes,
-            headers: manifest.headers
+            headers: manifest.headers,
+            redirects: manifest.redirects
           },
           samples: result.samples
         }
@@ -87,7 +101,8 @@ export async function processProbe(probeId: string) {
             manifest: {
               url: manifest.url,
               bytes: manifest.bytes,
-              headers: manifest.headers
+              headers: manifest.headers,
+              redirects: manifest.redirects
             },
             samples: result.samples
           }
@@ -148,20 +163,26 @@ async function inspectHls(probeId: string, manifest: FetchResult) {
   const isLive = !mediaPlaylist.text.includes("#EXT-X-ENDLIST");
   const liveLatencyMs = isLive && targetDuration ? targetDuration * 3 * 1000 : null;
   const checks: Check[] = [
-    variants.length > 0
-      ? { status: "pass", label: "Variant ladder", detail: `${variants.length} bitrate variants detected.` }
-      : { status: "warn", label: "Variant ladder", detail: "No master playlist variants detected." },
+    ...manifestIntegrityChecks("hls", manifest),
+    ...redirectChecks("Manifest redirects", manifest.redirects),
+    ...cacheHeaderChecks("Manifest cache", manifest.headers),
+    ...hlsVariantChecks(variants),
     segments.length > 0
       ? { status: "pass", label: "Segments", detail: `${segments.length} segment URL samples discovered.` }
       : { status: "fail", label: "Segments", detail: "No segment URLs were found in the sampled playlist." },
     manifest.ms <= 1200
       ? { status: "pass", label: "Manifest timing", detail: `Manifest fetched in ${manifest.ms}ms.` }
       : { status: "warn", label: "Manifest timing", detail: `Manifest fetch took ${manifest.ms}ms.` },
-    ...segmentChecks(samples)
+    ...segmentChecks(samples),
+    ...sampleEvidenceChecks(samples)
   ];
 
   if (isLive && mediaSequence === null) {
     checks.push({ status: "warn", label: "Live freshness", detail: "Live playlist does not expose a media sequence." });
+  } else if (isLive) {
+    checks.push({ status: "pass", label: "Live freshness", detail: `Live playlist exposes media sequence ${mediaSequence}.` });
+  } else {
+    checks.push({ status: "pass", label: "Playlist type", detail: "Playlist declares an endlist, so it is treated as VOD." });
   }
 
   return {
@@ -181,6 +202,9 @@ async function inspectDash(probeId: string, manifest: FetchResult) {
   const adaptationSetCount = countMatches(manifest.text, /<AdaptationSet\b/g);
   const samples = await sampleUrls(probeId, parseDashSampleUrls(manifest.text, manifest.url).slice(0, MAX_SAMPLE_SEGMENTS));
   const checks: Check[] = [
+    ...manifestIntegrityChecks("dash", manifest),
+    ...redirectChecks("Manifest redirects", manifest.redirects),
+    ...cacheHeaderChecks("Manifest cache", manifest.headers),
     representationCount > 0
       ? { status: "pass", label: "Representations", detail: `${representationCount} DASH representations detected.` }
       : { status: "fail", label: "Representations", detail: "No DASH representations were detected." },
@@ -190,7 +214,8 @@ async function inspectDash(probeId: string, manifest: FetchResult) {
     manifest.ms <= 1200
       ? { status: "pass", label: "MPD timing", detail: `MPD fetched in ${manifest.ms}ms.` }
       : { status: "warn", label: "MPD timing", detail: `MPD fetch took ${manifest.ms}ms.` },
-    ...segmentChecks(samples)
+    ...segmentChecks(samples),
+    ...sampleEvidenceChecks(samples)
   ];
 
   return {
@@ -207,7 +232,7 @@ async function inspectDash(probeId: string, manifest: FetchResult) {
 
 async function fetchText(url: string, timeoutMs: number): Promise<FetchResult> {
   const started = performance.now();
-  const { response, url: finalUrl, bytes } = await safeFetch(url, {
+  const { response, url: finalUrl, bytes, redirects } = await safeFetch(url, {
     timeoutMs,
     maxBytes: MAX_MANIFEST_BYTES,
     headers: {
@@ -223,13 +248,14 @@ async function fetchText(url: string, timeoutMs: number): Promise<FetchResult> {
     ms: Math.round(performance.now() - started),
     text,
     bytes: bytes.byteLength,
-    headers: pickHeaders(response.headers)
+    headers: pickHeaders(response.headers),
+    redirects
   };
 }
 
 async function fetchSample(url: string) {
   const started = performance.now();
-  const { response, url: finalUrl } = await safeFetch(url, {
+  const { response, url: finalUrl, bytes, redirects } = await safeFetch(url, {
     timeoutMs: SEGMENT_TIMEOUT_MS,
     maxBytes: MAX_SAMPLE_BYTES,
     headers: {
@@ -242,19 +268,21 @@ async function fetchSample(url: string) {
     status: response.status,
     ok: response.ok || response.status === 206,
     ms: Math.round(performance.now() - started),
-    headers: pickHeaders(response.headers)
+    headers: pickHeaders(response.headers),
+    bytes: bytes.byteLength,
+    redirects
   };
 }
 
-async function sampleUrls(probeId: string, urls: string[]) {
-  const samples = [];
+async function sampleUrls(probeId: string, urls: string[]): Promise<SampleResult[]> {
+  const samples: SampleResult[] = [];
   for (const url of urls) {
     try {
       const sample = await fetchSample(url);
       samples.push(sample);
       await addEvent(probeId, sample.ok ? "pass" : "warn", `Sample fetched with HTTP ${sample.status} in ${sample.ms}ms.`);
     } catch (error) {
-      samples.push({ url, status: 0, ok: false, ms: SEGMENT_TIMEOUT_MS, headers: {}, error: error instanceof Error ? error.message : "Sample failed" });
+      samples.push({ url, status: 0, ok: false, ms: SEGMENT_TIMEOUT_MS, headers: {}, redirects: [], error: error instanceof Error ? error.message : "Sample failed" });
       await addEvent(probeId, "warn", `Sample fetch failed for ${url}.`);
     }
   }
@@ -263,11 +291,18 @@ async function sampleUrls(probeId: string, urls: string[]) {
 
 function parseHlsVariants(text: string, baseUrl: string) {
   const lines = text.split(/\r?\n/);
-  const variants: Array<{ url: string; bandwidth: number | null }> = [];
+  const variants: Array<{ url: string; bandwidth: number | null; resolution: string | null; codecs: string | null }> = [];
   for (let index = 0; index < lines.length; index += 1) {
     if (!lines[index].startsWith("#EXT-X-STREAM-INF")) continue;
     const next = lines.slice(index + 1).find((line) => line.trim() && !line.startsWith("#"));
-    if (next) variants.push({ url: new URL(next.trim(), baseUrl).toString(), bandwidth: parseAttributeNumber(lines[index], "BANDWIDTH") });
+    if (next) {
+      variants.push({
+        url: new URL(next.trim(), baseUrl).toString(),
+        bandwidth: parseAttributeNumber(lines[index], "BANDWIDTH"),
+        resolution: parseAttributeString(lines[index], "RESOLUTION"),
+        codecs: parseAttributeString(lines[index], "CODECS")
+      });
+    }
   }
   return variants;
 }
@@ -301,6 +336,12 @@ function parseAttributeNumber(line: string, key: string) {
   return match ? Number(match[1]) : null;
 }
 
+function parseAttributeString(line: string, key: string) {
+  const match = line.match(new RegExp(`${key}=("[^"]+"|[^,]+)`));
+  if (!match) return null;
+  return match[1].replace(/^"|"$/g, "");
+}
+
 function parseNumberTag(text: string, tag: string) {
   const line = text.split(/\r?\n/).find((item) => item.startsWith(tag));
   if (!line) return null;
@@ -312,13 +353,112 @@ function countMatches(text: string, regex: RegExp) {
   return Array.from(text.matchAll(regex)).length;
 }
 
-function segmentChecks(samples: Array<{ ok: boolean; status: number; ms: number }>): Check[] {
+function manifestIntegrityChecks(type: "hls" | "dash", manifest: FetchResult): Check[] {
+  const contentType = manifest.headers["content-type"] || "unknown";
+  const trimmed = manifest.text.trimStart();
+  const htmlLike = /text\/html|application\/xhtml/i.test(contentType) || /^<!doctype html|^<html[\s>]/i.test(trimmed);
+  const jsonLike = /application\/json/i.test(contentType) || trimmed.startsWith("{");
+
+  if (htmlLike || jsonLike) {
+    return [{ status: "fail", label: "Manifest format", detail: `Manifest response looked like ${htmlLike ? "HTML" : "JSON"} instead of ${type.toUpperCase()}.` }];
+  }
+
+  if (type === "hls") {
+    return trimmed.startsWith("#EXTM3U")
+      ? [{ status: "pass", label: "Manifest format", detail: `Valid HLS signature detected; content-type is ${contentType}.` }]
+      : [{ status: "fail", label: "Manifest format", detail: "HLS manifest is missing the #EXTM3U signature." }];
+  }
+
+  return /<MPD[\s>]/.test(trimmed)
+    ? [{ status: "pass", label: "Manifest format", detail: `Valid DASH MPD root detected; content-type is ${contentType}.` }]
+    : [{ status: "fail", label: "Manifest format", detail: "DASH manifest is missing an MPD root element." }];
+}
+
+function redirectChecks(label: string, redirects: RedirectHop[]): Check[] {
+  if (!redirects.length) return [{ status: "pass", label, detail: "No redirects followed." }];
+
+  const crossedHosts = redirects.filter((redirect) => new URL(redirect.from).hostname !== new URL(redirect.to).hostname);
+  if (crossedHosts.length) {
+    return [{ status: "warn", label, detail: `${redirects.length} redirects followed; ${crossedHosts.length} crossed hostnames.` }];
+  }
+
+  return [{ status: "pass", label, detail: `${redirects.length} same-host redirects followed safely.` }];
+}
+
+function cacheHeaderChecks(label: string, headers: HeaderMap): Check[] {
+  const cacheControl = headers["cache-control"];
+  const validators = [headers.etag, headers["last-modified"]].filter(Boolean);
+  const cdnSignals = [headers.age, headers.via, headers["x-cache"], headers["cf-cache-status"]].filter(Boolean);
+
+  if (cacheControl || validators.length || cdnSignals.length) {
+    const parts = [
+      cacheControl ? `cache-control=${cacheControl}` : null,
+      validators.length ? `${validators.length} validator header${validators.length === 1 ? "" : "s"}` : null,
+      cdnSignals.length ? `${cdnSignals.length} CDN/cache signal${cdnSignals.length === 1 ? "" : "s"}` : null
+    ].filter(Boolean);
+    return [{ status: "pass", label, detail: parts.join("; ") || "Cache headers present." }];
+  }
+
+  return [{ status: "warn", label, detail: "No cache-control, validator, or CDN cache headers were present." }];
+}
+
+function hlsVariantChecks(variants: ReturnType<typeof parseHlsVariants>): Check[] {
+  if (!variants.length) return [{ status: "warn", label: "Variant ladder", detail: "No master playlist variants detected." }];
+
+  const bandwidths = variants.flatMap((variant) => variant.bandwidth ? [variant.bandwidth] : []);
+  const missingBandwidth = variants.filter((variant) => !variant.bandwidth).length;
+  const missingOptionalMetadata = variants.filter((variant) => !variant.resolution || !variant.codecs).length;
+  const uniqueUrls = new Set(variants.map((variant) => variant.url)).size;
+
+  if (missingBandwidth || !bandwidths.length) {
+    return [{ status: "warn", label: "Variant ladder", detail: `${variants.length} variants detected; ${missingBandwidth} are missing required bandwidth metadata.` }];
+  }
+
+  const minBandwidth = Math.min(...bandwidths);
+  const maxBandwidth = Math.max(...bandwidths);
+  const metadataNote = missingOptionalMetadata ? `; ${missingOptionalMetadata} missing resolution or codec metadata` : "";
+  const uniqueNote = uniqueUrls === variants.length ? "" : ` across ${uniqueUrls} unique playlists`;
+  return [{ status: "pass", label: "Variant ladder", detail: `${variants.length} variants detected${uniqueNote} from ${formatBitrate(minBandwidth)} to ${formatBitrate(maxBandwidth)}${metadataNote}.` }];
+}
+
+function segmentChecks(samples: SampleResult[]): Check[] {
   if (!samples.length) return [{ status: "warn", label: "Sample fetch", detail: "No segment samples were fetched." }];
   const slowest = Math.max(...samples.map((sample) => sample.ms));
   const failed = samples.filter((sample) => !sample.ok).length;
   if (failed) return [{ status: "fail", label: "Sample fetch", detail: `${failed} sampled media requests failed.` }];
   if (slowest > 2500) return [{ status: "warn", label: "Sample timing", detail: `Slowest media sample took ${slowest}ms.` }];
   return [{ status: "pass", label: "Sample timing", detail: `All sampled media requests completed; slowest was ${slowest}ms.` }];
+}
+
+function sampleEvidenceChecks(samples: SampleResult[]): Check[] {
+  if (!samples.length) return [];
+
+  const statuses = Array.from(new Set(samples.map((sample) => sample.status))).join("/");
+  const redirected = samples.reduce((count, sample) => count + (sample.redirects?.length || 0), 0);
+  const totalBytes = samples.reduce((sum, sample) => sum + (sample.bytes || 0), 0);
+  const contentTypes = Array.from(new Set(samples.map((sample) => sample.headers["content-type"]).filter(Boolean)));
+  const timing = `${Math.min(...samples.map((sample) => sample.ms))}-${Math.max(...samples.map((sample) => sample.ms))}ms`;
+  const detail = [
+    `${samples.length} samples returned HTTP ${statuses}`,
+    `${formatBytes(totalBytes)} read`,
+    `${timing} timing`,
+    contentTypes.length ? `content-type ${contentTypes.slice(0, 2).join(", ")}` : null,
+    redirected ? `${redirected} segment redirects` : "no segment redirects"
+  ].filter(Boolean).join("; ");
+
+  return [{ status: "pass", label: "Sample evidence", detail }];
+}
+
+function formatBitrate(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}Mbps`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}Kbps`;
+  return `${value}bps`;
+}
+
+function formatBytes(value: number) {
+  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)}MB`;
+  if (value >= 1024) return `${Math.round(value / 1024)}KB`;
+  return `${value}B`;
 }
 
 function classify(checks: Check[]) {
@@ -363,6 +503,8 @@ function pickHeaders(headers: Headers): HeaderMap {
     "content-type": headers.get("content-type"),
     "content-length": headers.get("content-length"),
     "cache-control": headers.get("cache-control"),
+    etag: headers.get("etag"),
+    "last-modified": headers.get("last-modified"),
     age: headers.get("age"),
     via: headers.get("via"),
     server: headers.get("server"),

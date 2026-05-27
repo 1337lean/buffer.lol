@@ -1,4 +1,5 @@
 function initBufferLol() {
+  const SIMULATE_PROBE_LABEL = 'Simulate probe';
   const landingRoot = document.getElementById('main-content');
   const isLandingPage = Boolean(document.querySelector('.hero-section') || document.getElementById('probe-form'));
 
@@ -409,14 +410,14 @@ function initBufferLol() {
         addConsoleLine(`[${run.status}] sample ${run.type.toLowerCase()} probe saved for ${run.region}`, run.status === 'pass' ? 'success-line' : 'warn-line');
         renderReport(run);
         if (probeSubmit) probeSubmit.disabled = false;
-        if (label) label.textContent = 'Run probe';
+        if (label) label.textContent = SIMULATE_PROBE_LABEL;
       }, prefersReducedMotion ? 60 : 3000);
     });
   }
 
   if (copyReport) {
     copyReport.addEventListener('click', async () => {
-      const text = latestReportText || 'Run a sample probe to generate a buffer.lol report preview.';
+      const text = latestReportText || 'Simulate a sample probe to generate a buffer.lol report preview.';
       try {
         if (!navigator.clipboard) throw new Error('Clipboard unavailable');
         await navigator.clipboard.writeText(text);
@@ -694,7 +695,7 @@ function initBufferLol() {
     {
       id: 'seed_probe_1',
       createdAt: '2026-05-23T13:10:00.000Z',
-      url: 'https://demo.buffer.lol/live/master.m3u8',
+      url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
       type: 'HLS',
       region: 'US East',
       status: 'warn',
@@ -705,7 +706,7 @@ function initBufferLol() {
     {
       id: 'seed_probe_2',
       createdAt: '2026-05-22T20:26:00.000Z',
-      url: 'https://demo.buffer.lol/vod/manifest.mpd',
+      url: 'https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd',
       type: 'DASH',
       region: 'EU West',
       status: 'pass',
