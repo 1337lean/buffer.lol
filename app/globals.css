@@ -143,7 +143,6 @@ main,
 }
 
 .brand,
-.header-cta,
 .eyebrow,
 .hero-meta,
 .section-kicker,
@@ -209,6 +208,8 @@ main,
   border-radius: 999px;
   color: var(--text);
   font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
   background: rgba(255, 255, 255, 0.045);
   cursor: pointer;
   transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
@@ -727,8 +728,6 @@ h3 {
 
 .probe-panel label,
 .admin-controls,
-.tab-button,
-.text-action,
 .status-pill,
 table,
 .activity-list,
@@ -1025,6 +1024,8 @@ table,
   color: var(--text);
   background: rgba(255, 255, 255, 0.055);
   cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .text-action:hover {
@@ -1051,11 +1052,13 @@ table,
 .tab-button {
   min-height: 2.4rem;
   padding: 0 0.72rem;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
   color: var(--muted);
   background: transparent;
   cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .tab-button.is-active,
