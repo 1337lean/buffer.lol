@@ -1,4 +1,6 @@
 function initBufferLol() {
+  document.documentElement.classList.add('js-enhanced');
+
   const SIMULATE_PROBE_LABEL = 'Simulate probe';
   const landingRoot = document.getElementById('main-content');
   const isLandingPage = Boolean(document.querySelector('.hero-section') || document.getElementById('probe-form'));
@@ -406,8 +408,9 @@ function initBufferLol() {
         renderProbeMetrics(run);
         if (probeStatusText) probeStatusText.textContent = run.mainWarning;
         setStatusPill(probeStatusPill, run.status);
-        addProbeLine(`[${run.status}] ${run.mainWarning}`, run.status === 'pass' ? 'success-line' : 'warn-line');
-        addConsoleLine(`[${run.status}] sample ${run.type.toLowerCase()} probe saved for ${run.region}`, run.status === 'pass' ? 'success-line' : 'warn-line');
+        const statusLineClass = run.status === 'pass' ? 'success-line' : run.status === 'fail' ? 'fail-line' : 'warn-line';
+        addProbeLine(`[${run.status}] ${run.mainWarning}`, statusLineClass);
+        addConsoleLine(`[${run.status}] sample ${run.type.toLowerCase()} probe saved for ${run.region}`, statusLineClass);
         renderReport(run);
         if (probeSubmit) probeSubmit.disabled = false;
         if (label) label.textContent = SIMULATE_PROBE_LABEL;

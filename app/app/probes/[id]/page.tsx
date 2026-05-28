@@ -53,7 +53,7 @@ export default async function ProbeDetailPage({ params }: PageProps) {
           <div className="console-header"><span /><span /><span /><strong>probe-events.log</strong></div>
           <div className="console-body">
             {events.length ? events.map((event) => (
-              <div className={`console-line ${event.level === "error" || event.level === "fail" ? "warn-line" : event.level === "pass" ? "success-line" : "system-line"}`} key={event.id}>
+              <div className={`console-line ${event.level === "error" || event.level === "fail" ? "fail-line" : event.level === "warn" ? "warn-line" : event.level === "pass" ? "success-line" : "system-line"}`} key={event.id}>
                 [{formatDateTime(event.createdAt)}] [{event.level}] {event.message}
               </div>
             )) : <div className="console-line system-line">[sys] waiting for worker events</div>}
