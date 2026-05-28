@@ -55,10 +55,17 @@ export async function processProbe(probeId: string) {
   try {
     await validateProbeUrl(probe.url);
     const manifest = await fetchText(probe.url, MANIFEST_TIMEOUT_MS);
-    await addEvent(probe.id, manifest.ok ? "pass" : "fail", `Manifest responded with HTTP ${manifest.status} in ${manifest.ms}ms.`, manifest.headers);
+    await addEvent(probe.id, manifest.ok ? "system" : "fail", `Manifest fetch returned HTTP ${manifest.status} in ${manifest.ms}ms.`, manifest.headers);
 
     if (!manifest.ok) {
       await finishWithError(probe.id, `Manifest returned HTTP ${manifest.status}.`);
+      return;
+    }
+
+    const manifestFormatChecks = manifestIntegrityChecks(probe.probeType, manifest);
+    const manifestFormatFailure = manifestFormatChecks.find((check) => check.label === "Manifest format" && check.status === "fail");
+    if (manifestFormatFailure) {
+      await finishWithDiagnosticFailure(probe.id, probe, manifest, invalidManifestChecks(manifestFormatFailure, manifest), manifestFormatFailure.detail);
       return;
     }
 
@@ -282,8 +289,9 @@ async function sampleUrls(probeId: string, urls: string[]): Promise<SampleResult
       samples.push(sample);
       await addEvent(probeId, sample.ok ? "pass" : "warn", `Sample fetched with HTTP ${sample.status} in ${sample.ms}ms.`);
     } catch (error) {
-      samples.push({ url, status: 0, ok: false, ms: SEGMENT_TIMEOUT_MS, headers: {}, redirects: [], error: error instanceof Error ? error.message : "Sample failed" });
-      await addEvent(probeId, "warn", `Sample fetch failed for ${url}.`);
+      const message = error instanceof Error ? error.message : "Sample failed";
+      samples.push({ url, status: 0, ok: false, ms: SEGMENT_TIMEOUT_MS, headers: {}, redirects: [], error: message });
+      await addEvent(probeId, "warn", `Sample fetch failed for ${shortenForEvent(url)}: ${shortenForEvent(message)}.`);
     }
   }
   return samples;
@@ -374,6 +382,27 @@ function manifestIntegrityChecks(type: "hls" | "dash", manifest: FetchResult): C
     : [{ status: "fail", label: "Manifest format", detail: "DASH manifest is missing an MPD root element." }];
 }
 
+function invalidManifestChecks(formatFailure: Check, manifest: FetchResult): Check[] {
+  const checks = [formatFailure];
+  const crossedHosts = manifest.redirects.filter((redirect) => new URL(redirect.from).hostname !== new URL(redirect.to).hostname);
+
+  if (crossedHosts.length) {
+    checks.push({
+      status: "warn",
+      label: "Manifest redirects",
+      detail: `${manifest.redirects.length} redirects followed; ${crossedHosts.length} crossed hostnames.`
+    });
+  }
+
+  checks.push({
+    status: "fail",
+    label: "Stream validation",
+    detail: `No media playlist or segment sampling was attempted because the manifest was not a valid stream document.`
+  });
+
+  return checks;
+}
+
 function redirectChecks(label: string, redirects: RedirectHop[]): Check[] {
   if (!redirects.length) return [{ status: "pass", label, detail: "No redirects followed." }];
 
@@ -461,6 +490,11 @@ function formatBytes(value: number) {
   return `${value}B`;
 }
 
+function shortenForEvent(value: string, limit = 180) {
+  const compact = value.replace(/\s+/g, " ");
+  return compact.length > limit ? `${compact.slice(0, limit - 1)}...` : compact;
+}
+
 function classify(checks: Check[]) {
   if (checks.some((check) => check.status === "fail")) return "fail";
   if (checks.some((check) => check.status === "warn")) return "warn";
@@ -516,6 +550,86 @@ function pickHeaders(headers: Headers): HeaderMap {
 async function addEvent(probeId: string, level: "system" | "pass" | "warn" | "fail" | "error", message: string, metadata: Record<string, unknown> = {}) {
   const db = getDb();
   await db.insert(probeEvents).values({ probeId, level, message, metadata });
+}
+
+async function finishWithDiagnosticFailure(
+  probeId: string,
+  probe: { probeType: string; url: string },
+  manifest: FetchResult,
+  checks: Check[],
+  title: string
+) {
+  const db = getDb();
+  const actions = actionsForStatus("fail");
+  const reportText = buildReportText({ status: "fail", title, probeType: probe.probeType, url: probe.url, checks, actions });
+
+  await addEvent(probeId, "fail", `Report generated: ${title}`);
+
+  await db
+    .insert(probeMetrics)
+    .values({
+      probeId,
+      manifestFetchMs: manifest.ms,
+      firstSegmentFetchMs: null,
+      cdnResponseMs: manifest.ms,
+      liveLatencyMs: null,
+      rebufferCount: 0,
+      bitrateVariantCount: 0,
+      segmentCountSampled: 0,
+      metadata: {
+        manifest: {
+          url: manifest.url,
+          bytes: manifest.bytes,
+          headers: manifest.headers,
+          redirects: manifest.redirects
+        },
+        samples: []
+      }
+    })
+    .onConflictDoUpdate({
+      target: probeMetrics.probeId,
+      set: {
+        manifestFetchMs: manifest.ms,
+        firstSegmentFetchMs: null,
+        cdnResponseMs: manifest.ms,
+        liveLatencyMs: null,
+        rebufferCount: 0,
+        bitrateVariantCount: 0,
+        segmentCountSampled: 0,
+        metadata: {
+          manifest: {
+            url: manifest.url,
+            bytes: manifest.bytes,
+            headers: manifest.headers,
+            redirects: manifest.redirects
+          },
+          samples: []
+        }
+      }
+    });
+
+  await db
+    .insert(reports)
+    .values({
+      probeId,
+      status: "fail",
+      title,
+      checks,
+      recommendedActions: actions,
+      reportText
+    })
+    .onConflictDoUpdate({
+      target: reports.probeId,
+      set: {
+        status: "fail",
+        title,
+        checks,
+        recommendedActions: actions,
+        reportText
+      }
+    });
+
+  await db.update(probes).set({ status: "fail", summary: title, completedAt: new Date() }).where(eq(probes.id, probeId));
 }
 
 async function finishWithError(probeId: string, message: string) {
