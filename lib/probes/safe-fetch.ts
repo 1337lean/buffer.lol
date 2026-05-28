@@ -1,4 +1,7 @@
-import { assertSafeProbeUrl } from "@/lib/probes/validate-url";
+import http from "http";
+import https from "https";
+import { resolveSafeProbeNetworkTarget } from "@/lib/probes/validate-url";
+import type { SafeProbeNetworkTarget } from "@/lib/probes/validate-url";
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
@@ -29,23 +32,20 @@ export async function safeFetch(url: string, options: SafeFetchOptions): Promise
   const redirects: RedirectHop[] = [];
 
   for (let redirectCount = 0; redirectCount <= redirectLimit; redirectCount += 1) {
-    await assertSafeProbeUrl(currentUrl);
-    const response = await fetchWithTimeout(currentUrl.toString(), options);
+    const response = await requestWithTimeout(currentUrl, options, (status) => !REDIRECT_STATUSES.has(status));
 
-    if (!REDIRECT_STATUSES.has(response.status)) {
-      const bytes = await readLimitedBody(response, options.maxBytes);
-      return { response, url: response.url || currentUrl.toString(), bytes, redirects };
+    if (!REDIRECT_STATUSES.has(response.response.status)) {
+      return { response: response.response, url: currentUrl.toString(), bytes: response.bytes, redirects };
     }
 
-    const location = response.headers.get("location");
-    await response.body?.cancel();
+    const location = response.response.headers.get("location");
     if (!location) {
       const bytes = new Uint8Array();
-      return { response, url: response.url || currentUrl.toString(), bytes, redirects };
+      return { response: response.response, url: currentUrl.toString(), bytes, redirects };
     }
 
     const nextUrl = new URL(location, currentUrl);
-    redirects.push({ from: currentUrl.toString(), to: nextUrl.toString(), status: response.status });
+    redirects.push({ from: currentUrl.toString(), to: nextUrl.toString(), status: response.response.status });
     currentUrl = nextUrl;
   }
 
@@ -56,47 +56,139 @@ export function decodeText(bytes: Uint8Array) {
   return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 }
 
-async function fetchWithTimeout(url: string, options: SafeFetchOptions) {
+async function requestWithTimeout(url: URL, options: SafeFetchOptions, shouldReadBody: (status: number) => boolean) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
+
   try {
-    return await fetch(url, {
-      method: options.method ?? "GET",
-      redirect: "manual",
-      signal: controller.signal,
-      headers: options.headers
-    });
+    const target = await resolveSafeProbeNetworkTarget(url);
+    return await requestResolvedTarget(target, options, shouldReadBody, controller.signal);
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`Probe request timed out after ${options.timeoutMs}ms.`);
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function readLimitedBody(response: Response, maxBytes: number) {
-  if (!response.body) return new Uint8Array();
+type ResolvedResponse = {
+  response: Response;
+  bytes: Uint8Array;
+};
 
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
+function requestResolvedTarget(
+  target: SafeProbeNetworkTarget,
+  options: SafeFetchOptions,
+  shouldReadBody: (status: number) => boolean,
+  signal: AbortSignal
+): Promise<ResolvedResponse> {
+  return new Promise((resolve, reject) => {
+    const url = target.url;
+    const isHttps = url.protocol === "https:";
+    const requestHeaders = headersForTarget(options.headers, target);
+    const requestOptions: https.RequestOptions = {
+      protocol: url.protocol,
+      hostname: target.address,
+      port: Number(url.port || (isHttps ? 443 : 80)),
+      method: options.method ?? "GET",
+      path: `${url.pathname}${url.search}`,
+      headers: requestHeaders,
+      family: target.family,
+      servername: isHttps ? target.hostname : undefined,
+      rejectUnauthorized: true
+    };
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        throw new Error(`Probe response exceeded ${maxBytes} bytes.`);
+    let settled = false;
+    const client = isHttps ? https : http;
+    const request = client.request(requestOptions, (incoming) => {
+      const response = toWebResponse(incoming);
+
+      if (!shouldReadBody(response.status) || options.method === "HEAD") {
+        incoming.destroy();
+        settle(() => resolve({ response, bytes: new Uint8Array() }));
+        return;
       }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
 
-  const output = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    output.set(chunk, offset);
-    offset += chunk.byteLength;
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+
+      incoming.on("data", (chunk: Buffer) => {
+        total += chunk.byteLength;
+        if (total > options.maxBytes) {
+          incoming.destroy(new Error(`Probe response exceeded ${options.maxBytes} bytes.`));
+          return;
+        }
+        chunks.push(chunk);
+      });
+
+      incoming.on("end", () => {
+        const bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+          bytes.set(chunk, offset);
+          offset += chunk.byteLength;
+        }
+        settle(() => resolve({ response, bytes }));
+      });
+
+      incoming.on("error", (error) => settle(() => reject(error)));
+    });
+
+    const abort = () => {
+      request.destroy(new Error(`Probe request timed out after ${options.timeoutMs}ms.`));
+    };
+
+    function settle(callback: () => void) {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", abort);
+      callback();
+    }
+
+    request.on("error", (error) => settle(() => reject(error)));
+
+    if (signal.aborted) {
+      abort();
+    } else {
+      signal.addEventListener("abort", abort, { once: true });
+      request.end();
+    }
+  });
+}
+
+function toWebResponse(incoming: http.IncomingMessage) {
+  return new Response(null, {
+    status: normalizeStatusCode(incoming.statusCode),
+    statusText: incoming.statusMessage,
+    headers: responseHeaders(incoming.headers)
+  });
+}
+
+function normalizeStatusCode(statusCode: number | undefined) {
+  return statusCode && statusCode >= 200 && statusCode <= 599 ? statusCode : 502;
+}
+
+function headersForTarget(input: HeadersInit | undefined, target: SafeProbeNetworkTarget) {
+  const headers = new Headers(input);
+  headers.set("host", target.hostHeader);
+
+  const output: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    output[key] = value;
+  });
+  return output;
+}
+
+function responseHeaders(headers: http.IncomingHttpHeaders) {
+  const output = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    if (typeof value === "string") {
+      output.append(key, value);
+    } else if (Array.isArray(value)) {
+      for (const item of value) output.append(key, item);
+    }
   }
   return output;
 }
