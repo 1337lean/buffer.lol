@@ -4,32 +4,23 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://buffer.lol"),
   title: {
-    default: "buffer.lol | Video buffering, latency, and CDN diagnostics",
+    default: "buffer.lol | Internet speed test",
     template: "%s | buffer.lol"
   },
   description:
-    "buffer.lol helps media teams test stream buffering, video latency, and CDN edge health from one modern diagnostics workspace.",
+    "buffer.lol is a browser-based internet speed test for checking download speed, upload speed, ping, and jitter.",
   openGraph: {
     title: "buffer.lol",
     description:
-      "A modern diagnostics workspace for stream buffering, video latency, and CDN health.",
+      "A browser-based internet speed test for download speed, upload speed, ping, and jitter.",
     type: "website",
-    url: "https://buffer.lol/",
-    images: [
-      {
-        url: "/assets/media-dashboard.png",
-        width: 1586,
-        height: 992,
-        alt: "Dark-mode buffer.lol dashboard preview showing media diagnostics panels."
-      }
-    ]
+    url: "https://buffer.lol/"
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "buffer.lol",
     description:
-      "A modern diagnostics workspace for stream buffering, video latency, and CDN health.",
-    images: ["/assets/media-dashboard.png"]
+      "A browser-based internet speed test for download speed, upload speed, ping, and jitter."
   },
   icons: {
     icon: "/assets/favicon.svg"

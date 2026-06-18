@@ -1,0 +1,78 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "buffer.lol",
+  "description": "Documentation for the buffer.lol browser-based internet speed tester.",
+  "colors": {
+    "primary": "#38BDF8",
+    "light": "#60A5FA",
+    "dark": "#2563EB"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "background": {
+    "decoration": "grid"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "changelog"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/measurements",
+          "concepts/privacy"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/overview",
+          "api-reference/speed-test"
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/roger/buffer.lol",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hello@buffer.lol"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Run test",
+      "href": "http://localhost:3000/#speed-test"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/roger/buffer.lol"
+    }
+  }
+}

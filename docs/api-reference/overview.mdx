@@ -1,0 +1,31 @@
+---
+title: API Reference
+description: Endpoint overview for buffer.lol speed tests.
+---
+
+# API Reference
+
+The public web tester calls one same-origin endpoint for download, upload, ping, and jitter measurement.
+
+## Endpoint
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/speed-test?bytes=2097152` | Generate an uncached binary payload |
+| `POST` | `/api/speed-test` | Accept a capped binary upload and return received bytes |
+
+## Limits
+
+| Limit | Value |
+| --- | --- |
+| Minimum generated download | 1 KB |
+| Maximum generated download | 12 MB |
+| Maximum accepted upload | 12 MB |
+
+## Authentication
+
+No authentication is required.
+
+<Card title="Speed Test Endpoint" icon="gauge" href="/api-reference/speed-test">
+  Request and response details for `/api/speed-test`.
+</Card>

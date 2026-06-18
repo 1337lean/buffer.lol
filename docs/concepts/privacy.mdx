@@ -1,0 +1,20 @@
+---
+title: Privacy
+description: What the speed test stores and what it does not store.
+---
+
+# Privacy
+
+The speed-test endpoint moves temporary bytes for measurement. It does not persist payloads.
+
+## What stays local
+
+Recent result history is stored in the browser's local storage so you can compare runs from the same device.
+
+## What the endpoint receives
+
+The endpoint receives normal request metadata and temporary upload payloads. Uploads are capped and discarded after the request.
+
+## What not to infer
+
+buffer.lol measures a browser-to-server path, not your full ISP contract. Your result may differ from provider tests, router tests, or tests to a closer server.
