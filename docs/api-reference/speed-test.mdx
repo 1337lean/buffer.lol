@@ -1,0 +1,65 @@
+---
+title: Speed Test Endpoint
+description: Download and upload payload endpoint used by buffer.lol.
+---
+
+# Speed Test Endpoint
+
+Use `/api/speed-test` to move temporary bytes for connection measurement.
+
+## Download payload
+
+```http
+GET /api/speed-test?bytes=2097152 HTTP/1.1
+Host: buffer.lol
+Cache-Control: no-store
+```
+
+### Query parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `bytes` | number | Requested payload size. Clamped between 1 KB and 12 MB. |
+
+### Response
+
+```http
+HTTP/1.1 200 OK
+Cache-Control: no-store, max-age=0
+Content-Type: application/octet-stream
+Content-Length: 2097152
+X-Test-Bytes: 2097152
+```
+
+The response body is binary data generated for the request.
+
+## Upload payload
+
+```http
+POST /api/speed-test HTTP/1.1
+Host: buffer.lol
+Content-Type: application/octet-stream
+Cache-Control: no-store
+
+<binary payload>
+```
+
+### Response
+
+```json
+{
+  "ok": true,
+  "bytes": 2097152,
+  "receivedAt": "2026-06-18T15:13:41.379Z"
+}
+```
+
+## Errors
+
+| Status | Meaning |
+| --- | --- |
+| `413` | Upload payload is larger than 12 MB |
+
+<Warning>
+  This endpoint is intended for measurement, not file storage. Uploaded bytes are discarded after the request.
+</Warning>

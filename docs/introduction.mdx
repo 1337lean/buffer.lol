@@ -1,0 +1,43 @@
+---
+title: Introduction
+description: Browser speed testing with temporary same-origin payloads.
+---
+
+# Introduction
+
+buffer.lol is a browser-based internet speed tester. It measures download speed, upload speed, ping, and jitter, then turns those numbers into practical connection notes.
+
+## What buffer.lol measures
+
+<CardGroup cols={2}>
+  <Card title="Download" icon="arrow-down">
+    Pulls uncached byte payloads from the same origin and converts transfer time into Mbps.
+  </Card>
+  <Card title="Upload" icon="arrow-up">
+    Posts a temporary browser-generated payload and measures upstream throughput.
+  </Card>
+  <Card title="Ping" icon="timer">
+    Samples tiny requests to estimate round-trip responsiveness.
+  </Card>
+  <Card title="Jitter" icon="activity">
+    Compares latency samples to show how stable the connection feels.
+  </Card>
+</CardGroup>
+
+## Base URL
+
+```text
+Production  https://buffer.lol
+Local dev   http://localhost:3000
+```
+
+## Quick links
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Run your first test and interpret the result.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Read the byte endpoints used by the browser tester.
+  </Card>
+</CardGroup>

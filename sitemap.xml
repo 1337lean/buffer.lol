@@ -2,14 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://buffer.lol/</loc>
-    <lastmod>2026-05-25</lastmod>
+    <lastmod>2026-06-18</lastmod>
   </url>
   <url>
-    <loc>https://buffer.lol/privacy.html</loc>
-    <lastmod>2026-05-25</lastmod>
+    <loc>https://buffer.lol/privacy</loc>
+    <lastmod>2026-06-18</lastmod>
   </url>
   <url>
-    <loc>https://buffer.lol/terms.html</loc>
-    <lastmod>2026-05-25</lastmod>
+    <loc>https://buffer.lol/terms</loc>
+    <lastmod>2026-06-18</lastmod>
   </url>
 </urlset>

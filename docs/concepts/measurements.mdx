@@ -1,0 +1,38 @@
+---
+title: Measurements
+description: How buffer.lol turns browser requests into connection metrics.
+---
+
+# Measurements
+
+buffer.lol measures the connection your browser can reach right now. The result reflects device load, Wi-Fi quality, VPN routes, local congestion, and server distance.
+
+## Ping
+
+Ping is estimated with small uncached requests. Lower is better for calls, games, and any interaction where waiting feels obvious.
+
+## Jitter
+
+Jitter is the variation between latency samples. A connection can have a good average ping and still feel rough if jitter spikes.
+
+## Download
+
+Download speed is calculated from the number of bytes received and the elapsed transfer time.
+
+```text
+download Mbps = bytes received * 8 / elapsed seconds / 1,000,000
+```
+
+## Upload
+
+Upload speed is measured by posting a temporary browser-generated payload to the same speed-test endpoint.
+
+## Practical thresholds
+
+| Use case | Useful target |
+| --- | --- |
+| Browsing | 5 Mbps down |
+| HD video | 15 Mbps down |
+| 4K video | 25 Mbps down |
+| Video calls | 10 Mbps up |
+| Low-lag play | Under 40 ms ping |
