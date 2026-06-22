@@ -1,12 +1,14 @@
 # buffer.lol
 
-Browser-based internet speed tester for download speed, upload speed, ping, jitter, and recent local result history.
+A dark, browser-first toolbox for network diagnostics, web checks, and developer utilities.
 
 ## Stack
 
 - Next.js App Router with TypeScript
-- Browser-side speed test controller in `public/app.js`
-- Same-origin speed-test API at `/api/speed-test`
+- Central tool registry in `data/tools.ts`
+- Reusable cards, layouts, result panels, and dynamic tool routes
+- Browser-only JSON, Base64, hashing, UUID, timestamp, and user-agent utilities
+- Backend-ready placeholders for network and IP checks
 - Mintlify docs in `docs/`
 - Local result history stored in browser local storage
 
@@ -22,8 +24,6 @@ Docs preview:
 ```bash
 npm run docs:dev
 ```
-
-During local development, the app's Docs links point at `http://localhost:3333` by default, and the Mintlify navbar's Run test button points back to `http://localhost:3000/#speed-test`.
 
 Useful checks:
 
@@ -42,18 +42,20 @@ No environment variables are required for local development. Set `NEXT_PUBLIC_DO
 Public:
 
 - `/`
+- `/tools/[slug]`
 - `/privacy`
 - `/terms`
 
 API:
 
+- Legacy endpoint retained for future connection-testing work:
 - `GET /api/speed-test?bytes=2097152`
 - `POST /api/speed-test`
 
-## Speed Testing
+## Backend work
 
-The homepage samples several tiny uncached requests for ping and jitter, downloads larger same-origin byte payloads, then posts a temporary browser-generated payload for upload timing. The endpoint caps generated downloads and accepted uploads at 12MB and does not persist payloads.
+See `BACKEND_PLAN.md` for the proposed API, Docker/Nginx deployment shape, endpoints, and security requirements. Screens marked **Backend required** never claim to return live data.
 
 ## Docs
 
-The Mintlify project lives in `docs/` and is intended for a docs subdomain such as `docs.buffer.lol`. It uses `docs.json`, a short Getting Started section, Concepts, and an API Reference page for `/api/speed-test`.
+The existing Mintlify project lives in `docs/`. Its legacy speed-test API reference can be refreshed when the new diagnostic API described in `BACKEND_PLAN.md` is implemented.
