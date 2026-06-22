@@ -15,19 +15,19 @@ export default function TermsPage() {
         <article className="simple-page">
           <span className="section-kicker">Terms</span>
           <h1>Product terms.</h1>
-          <p>buffer.lol provides browser-based internet speed testing. Results are practical measurements, not a guarantee of provider performance or future connection quality.</p>
+          <p>buffer.lol provides browser-based networking and developer utilities. Tool output is offered for practical informational use and is not a guarantee of network performance, availability, identity, or security.</p>
 
           <h2>Acceptable Use</h2>
           <p>Do not attempt to disrupt the site, bypass controls, automate abusive traffic, scrape submissions, or interfere with other visitors.</p>
 
           <h2>No Warranty</h2>
-          <p>The service is provided as-is and may change. Speed results can be affected by Wi-Fi quality, VPNs, device load, browser behavior, server distance, and temporary network congestion.</p>
+          <p>The service is provided as-is and may change. Network results can be affected by routing, VPNs, browser behavior, server distance, caching, firewalls, and temporary congestion.</p>
 
           <h2>Contact</h2>
           <p>For questions about these terms, email <a href="mailto:hello@buffer.lol">hello@buffer.lol</a>.</p>
 
           <h2>Last Updated</h2>
-          <p>June 18, 2026</p>
+          <p>June 22, 2026</p>
           <p><Link href="/">Back to buffer.lol</Link></p>
         </article>
       </main>
