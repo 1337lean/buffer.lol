@@ -54,7 +54,7 @@ API:
 
 Most network/IP tools now use `POST /api/tools/[slug]` with a `{ "input": "..." }` JSON body and return `{ data, error, durationMs, requestId }`. The committed UI exposes DNS lookup, HTTP headers, SSL checker, uptime, port checker, public IP, IP geolocation/network details, and ASN lookup through that route.
 
-The shared API route also includes handlers for RDAP domain lookups, redirect checks, and robots/sitemap checks so those pages can be enabled when their tool registry entries land. Ping, packet loss, and traceroute still need the container/VM worker described in `BACKEND_PLAN.md` because ICMP and traceroute are not reliable in serverless runtimes.
+The shared API route also includes handlers for RDAP domain lookups, redirect checks, and robots/sitemap checks so those pages can be enabled when their tool registry entries land. Ping, packet loss, and traceroute still need a separate container or VM worker because ICMP and traceroute are not reliable in serverless runtimes.
 
 ## Docs
 
