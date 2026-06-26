@@ -1,24 +1,36 @@
 # buffer.lol backend plan
 
-## Recommended shape
+## Current shape
+
+The Next.js app now has a shared same-origin diagnostics route:
+
+- `POST /api/tools/dns-lookup`
+- `POST /api/tools/http-headers`
+- `POST /api/tools/ssl-checker`
+- `POST /api/tools/uptime`
+- `POST /api/tools/port-checker`
+- `POST /api/tools/whois-lookup`
+- `POST /api/tools/redirect-checker`
+- `POST /api/tools/robots-sitemap`
+- `POST /api/tools/my-ip`
+- `POST /api/tools/ip-geolocation`
+- `POST /api/tools/asn-lookup`
+
+Requests accept `{ "input": "target" }` and responses use `{ data, error, durationMs, requestId }`. The implementation is intentionally serverless-friendly: it uses Node DNS/TLS/TCP/fetch APIs, validates targets, rejects private/local/reserved/multicast addresses, caps fetch time and text output, and does not shell out.
+
+Ping, packet loss, and traceroute return `501` for now because they need lower-level network privileges that do not fit a typical Netlify/Next serverless runtime.
+
+## Recommended worker shape
 
 Build a small, stateless API using **FastAPI** (Python) or **Node/Express**. Package it in Docker and deploy it behind an Nginx reverse proxy. Nginx should terminate TLS, enforce conservative body-size and connection limits, and forward only the explicitly supported `/api/*` routes.
 
-Suggested endpoints:
+Suggested worker endpoints:
 
 - `POST /api/ping`
 - `POST /api/packet-loss`
-- `POST /api/dns`
 - `POST /api/traceroute`
-- `POST /api/headers`
-- `POST /api/ssl`
-- `POST /api/uptime`
-- `POST /api/port-check`
-- `GET /api/ip`
-- `POST /api/ip/geolocation`
-- `POST /api/ip/asn`
 
-Return a consistent envelope such as `{ data, error, durationMs, requestId }`. Keep network-provider adapters separate from route handlers so mock implementations and hosted APIs can be swapped cleanly. The frontend tool registry and `ToolExperience` component are already structured around one endpoint per tool.
+Keep the same envelope as the Next route. The frontend tool registry and `ToolExperience` component already post to one endpoint per tool slug, so those worker routes can either replace the current `501` responses or be proxied behind the same `/api/tools/:slug` surface.
 
 ## Security requirements
 

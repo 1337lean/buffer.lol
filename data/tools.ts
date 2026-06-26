@@ -114,6 +114,44 @@ export const tools: Tool[] = [
     inputPlaceholder: "example.com:443"
   },
   {
+    slug: "cidr-calculator",
+    name: "CIDR Calculator",
+    description: "Calculate IPv4 network ranges, masks, broadcast addresses, and host counts.",
+    category: "networking",
+    command: "cidr",
+    status: "available"
+  },
+  {
+    slug: "whois-lookup",
+    name: "WHOIS Lookup",
+    description: "Look up domain registration, registrar, nameserver, and expiry details.",
+    category: "networking",
+    command: "whois",
+    status: "available",
+    inputLabel: "Domain or IP",
+    inputPlaceholder: "example.com"
+  },
+  {
+    slug: "redirect-checker",
+    name: "Redirect Checker",
+    description: "Follow redirects and inspect status codes, locations, and timing.",
+    category: "networking",
+    command: "redirects",
+    status: "available",
+    inputLabel: "Website URL",
+    inputPlaceholder: "https://example.com"
+  },
+  {
+    slug: "robots-sitemap",
+    name: "Robots.txt / Sitemap Checker",
+    description: "Inspect robots.txt rules and discover sitemap declarations for a website.",
+    category: "networking",
+    command: "robots",
+    status: "available",
+    inputLabel: "Website URL",
+    inputPlaceholder: "https://example.com"
+  },
+  {
     slug: "my-ip",
     name: "What's My IP",
     description: "See the public IP address exposed by your connection.",
@@ -189,6 +227,30 @@ export const tools: Tool[] = [
     description: "Convert Unix timestamps and readable dates in either direction.",
     category: "developer",
     command: "date +%s",
+    status: "available"
+  },
+  {
+    slug: "url-parser",
+    name: "URL Parser / Encoder",
+    description: "Parse URLs, inspect query parameters, and encode or decode URL components locally.",
+    category: "developer",
+    command: "url",
+    status: "available"
+  },
+  {
+    slug: "jwt-decoder",
+    name: "JWT Decoder",
+    description: "Decode JWT headers and payloads locally without verifying signatures.",
+    category: "developer",
+    command: "jwt",
+    status: "available"
+  },
+  {
+    slug: "regex-tester",
+    name: "Regex Tester",
+    description: "Test JavaScript regular expressions and inspect matches, groups, and indexes.",
+    category: "developer",
+    command: "regex",
     status: "available"
   }
 ];

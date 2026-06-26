@@ -18,7 +18,6 @@ export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "childr
         <Link href={`${prefix}#ip`}>IP tools</Link>
         <Link href={`${prefix}#developer`}>Developer</Link>
       </nav>
-      <Link className="header-cta" href="/tools/json-formatter"><span className="header-cta-dot" /> Open a tool</Link>
     </header>
   );
 }
@@ -37,7 +36,6 @@ export function SiteFooter() {
 export function SiteChrome({ children, navHomePrefix }: SiteChromeProps) {
   return (
     <>
-      <a className="skip-link" href="#main-content">Skip to content</a>
       <div className="grid-overlay" aria-hidden="true" />
       <SiteHeader navHomePrefix={navHomePrefix} />
       {children}
