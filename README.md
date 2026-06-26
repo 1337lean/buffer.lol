@@ -49,9 +49,6 @@ Public:
 API:
 
 - `POST /api/tools/[slug]`
-- Legacy endpoint retained for future connection-testing work:
-- `GET /api/speed-test?bytes=2097152`
-- `POST /api/speed-test`
 
 ## Backend work
 
@@ -61,4 +58,4 @@ The shared API route also includes handlers for RDAP domain lookups, redirect ch
 
 ## Docs
 
-The existing Mintlify project lives in `docs/`. Its legacy speed-test API reference can be refreshed when the new diagnostic API described in `BACKEND_PLAN.md` is implemented.
+The existing Mintlify project lives in `docs/` and should describe buffer.lol as a diagnostics toolbox.
