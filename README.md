@@ -8,7 +8,7 @@ A dark, browser-first toolbox for network diagnostics, web checks, and developer
 - Central tool registry in `data/tools.ts`
 - Reusable cards, layouts, result panels, and dynamic tool routes
 - Browser-only JSON, Base64, hashing, UUID, timestamp, and user-agent utilities
-- Backend-ready placeholders for network and IP checks
+- Same-origin API-backed diagnostics for DNS, HTTP headers, TLS certificates, uptime, TCP ports, public IP, IP network, and ASN checks
 - Mintlify docs in `docs/`
 - Local result history stored in browser local storage
 
@@ -48,13 +48,16 @@ Public:
 
 API:
 
+- `POST /api/tools/[slug]`
 - Legacy endpoint retained for future connection-testing work:
 - `GET /api/speed-test?bytes=2097152`
 - `POST /api/speed-test`
 
 ## Backend work
 
-See `BACKEND_PLAN.md` for the proposed API, Docker/Nginx deployment shape, endpoints, and security requirements. Screens marked **Backend required** never claim to return live data.
+Most network/IP tools now use `POST /api/tools/[slug]` with a `{ "input": "..." }` JSON body and return `{ data, error, durationMs, requestId }`. The committed UI exposes DNS lookup, HTTP headers, SSL checker, uptime, port checker, public IP, IP geolocation/network details, and ASN lookup through that route.
+
+The shared API route also includes handlers for RDAP domain lookups, redirect checks, and robots/sitemap checks so those pages can be enabled when their tool registry entries land. Ping, packet loss, and traceroute still need the container/VM worker described in `BACKEND_PLAN.md` because ICMP and traceroute are not reliable in serverless runtimes.
 
 ## Docs
 
