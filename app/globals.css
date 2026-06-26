@@ -362,6 +362,7 @@ main,
 .result-body { flex: 1; min-width: 0; padding: 1.25rem; overflow: auto; }
 .result-body pre { min-height: 280px; margin: 0; white-space: pre; color: #c8c4d0; font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.65; }
 .result-body .wrap-output { white-space: pre-wrap; overflow-wrap: anywhere; }
+.result-body .compact-pre { min-height: auto; padding: 0.75rem; border: 1px solid var(--line); border-radius: 8px; background: rgba(5, 5, 8, 0.45); }
 .terminal-empty { color: var(--faint); font-family: var(--font-mono); font-size: 0.72rem; }
 .uuid-list { padding: 0; margin: 0; list-style: none; font-family: var(--font-mono); font-size: 0.7rem; }
 .uuid-list li { display: flex; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
@@ -370,12 +371,16 @@ main,
 .result-list div { display: grid; grid-template-columns: minmax(120px, 0.33fr) 1fr; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
 .result-list dt { color: var(--faint); }
 .result-list dd { min-width: 0; color: #d5d1dc; overflow-wrap: anywhere; }
+.result-note { margin-bottom: 0.85rem; color: var(--muted); font-size: 0.72rem; line-height: 1.6; }
+.stacked-output { display: grid; gap: 1rem; }
 .info-card { justify-content: center; }
 .info-card h2 { font-size: 1.7rem; letter-spacing: -0.04em; }
 .info-card > p:not(.privacy-note) { max-width: 400px; color: var(--muted); font-size: 0.84rem; line-height: 1.65; }
 .backend-banner { padding: 0.9rem; border: 1px solid rgba(243, 187, 107, 0.25); border-radius: 8px; background: rgba(243, 187, 107, 0.045); }
 .backend-banner span { color: var(--amber); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .backend-banner p { margin-top: 0.45rem; color: var(--muted); font-size: 0.74rem; }
+.backend-banner.is-live { border-color: rgba(105, 227, 176, 0.24); background: rgba(105, 227, 176, 0.045); }
+.backend-banner.is-live span { color: var(--green); }
 .backend-result { max-width: 480px; padding: 0.5rem; }
 .backend-result > span { color: var(--amber); font-family: var(--font-mono); font-size: 0.59rem; letter-spacing: 0.1em; }
 .backend-result h3 { margin-top: 0.8rem; font-size: 1.25rem; }

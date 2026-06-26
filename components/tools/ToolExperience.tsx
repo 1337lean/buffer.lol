@@ -194,35 +194,92 @@ function UserAgentParser() {
   );
 }
 
-function BackendPlaceholder({ tool }: { tool: Tool }) {
-  const [input, setInput] = useState(tool.slug === "my-ip" ? "" : "");
-  const [state, setState] = useState<"idle" | "pending" | "error">("idle");
+type BackendEnvelope = {
+  data?: unknown;
+  error?: string;
+  durationMs?: number;
+  requestId?: string;
+};
 
-  function previewRequest(event: React.FormEvent) {
+type BackendResult =
+  | { kind: "idle"; message: string }
+  | { kind: "pending" }
+  | { kind: "error"; message: string; requestId?: string; durationMs?: number }
+  | { kind: "success"; data: unknown; requestId?: string; durationMs?: number };
+
+function BackendPlaceholder({ tool }: { tool: Tool }) {
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState<BackendResult>({ kind: "idle", message: "Waiting for input." });
+  const status = result.kind === "success" ? "success" : result.kind === "error" ? "error" : result.kind === "pending" ? "pending" : "idle";
+  const isLiveBackendTool = tool.status === "available";
+
+  async function runBackendRequest(event: React.FormEvent) {
     event.preventDefault();
-    setState("pending");
-    window.setTimeout(() => setState("error"), 650);
+    setResult({ kind: "pending" });
+
+    try {
+      const response = await fetch(`/api/tools/${tool.slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input })
+      });
+      const payload = await response.json() as BackendEnvelope;
+
+      if (!response.ok || payload.error) {
+        setResult({
+          kind: "error",
+          message: payload.error || `Request failed with HTTP ${response.status}.`,
+          durationMs: payload.durationMs,
+          requestId: payload.requestId
+        });
+        return;
+      }
+
+      setResult({
+        kind: "success",
+        data: payload.data,
+        durationMs: payload.durationMs,
+        requestId: payload.requestId
+      });
+    } catch (error) {
+      setResult({
+        kind: "error",
+        message: error instanceof Error ? error.message : "The backend request failed."
+      });
+    }
   }
 
-  // TODO(api): Connect these backend-required tools to their hardened server endpoints.
-  // Ping Tester, Packet Loss Tester, Traceroute Visualizer, DNS Lookup,
-  // HTTP Header Inspector, SSL Certificate Checker, Uptime Checker, Port Checker,
-  // What's My IP, IP Geolocation, and ASN / ISP Lookup.
   return (
     <>
-      <form className="tool-controls" onSubmit={previewRequest}>
-        <div className="backend-banner"><span>Backend required</span><p>The interface is ready; live network requests are not connected yet.</p></div>
+      <form className="tool-controls" onSubmit={runBackendRequest}>
+        <div className={isLiveBackendTool ? "backend-banner is-live" : "backend-banner"}>
+          <span>{isLiveBackendTool ? "Server check" : "Backend required"}</span>
+          <p>{isLiveBackendTool ? "This tool runs through the same-origin diagnostics API." : "This tool needs a container or VM worker before it can return live network data."}</p>
+        </div>
         <label>
           <FieldLabel>{tool.inputLabel || "Target"}</FieldLabel>
           <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={tool.inputPlaceholder} disabled={tool.slug === "my-ip"} required={tool.slug !== "my-ip"} />
         </label>
-        <div className="button-row"><button className="primary-button" disabled={state === "pending"} type="submit">{state === "pending" ? "Checking…" : tool.slug === "my-ip" ? "Detect my IP" : "Run check"} <span>→</span></button></div>
-        <p className="helper-text">No request will leave your browser in this preview.</p>
+        <div className="button-row"><button className="primary-button" disabled={result.kind === "pending"} type="submit">{result.kind === "pending" ? "Checking…" : tool.slug === "my-ip" ? "Detect my IP" : "Run check"} <span>→</span></button></div>
+        <p className="helper-text">{isLiveBackendTool ? "Targets are validated server-side before any outbound request is made." : "Use the planned worker deployment for ICMP and traceroute support."}</p>
       </form>
-      <ResultPanel title={`${tool.slug}.output`} status={state}>
-        {state === "idle" && <p className="terminal-empty"><span className="prompt">$</span> waiting for input<span className="cursor" /></p>}
-        {state === "pending" && <div className="loading-lines" aria-label="Loading"><span /><span /><span /></div>}
-        {state === "error" && <div className="backend-result"><span>COMING SOON</span><h3>Backend connection pending</h3><p>This was a UI preview only. No live result was generated or presented.</p><code># TODO: connect /api/{tool.slug}</code></div>}
+      <ResultPanel title={`${tool.slug}.output`} status={status}>
+        {result.kind === "idle" && <p className="terminal-empty"><span className="prompt">$</span> {result.message}<span className="cursor" /></p>}
+        {result.kind === "pending" && <div className="loading-lines" aria-label="Loading"><span /><span /><span /></div>}
+        {result.kind === "error" && (
+          <div className="backend-result">
+            <span>ERROR</span>
+            <h3>Request did not complete</h3>
+            <p>{result.message}</p>
+            {result.requestId && <code>requestId: {result.requestId} · {result.durationMs}ms</code>}
+          </div>
+        )}
+        {result.kind === "success" && (
+          <div className="stacked-output">
+            <p className="result-note">Completed in {result.durationMs}ms{result.requestId ? ` · ${result.requestId}` : ""}</p>
+            <pre className="wrap-output compact-pre">{JSON.stringify(result.data, null, 2)}</pre>
+          </div>
+        )}
       </ResultPanel>
     </>
   );

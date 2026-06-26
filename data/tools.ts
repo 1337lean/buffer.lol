@@ -69,7 +69,7 @@ export const tools: Tool[] = [
     description: "Inspect A, AAAA, MX, TXT, CNAME, and NS records.",
     category: "networking",
     command: "dig",
-    status: "backend",
+    status: "available",
     inputLabel: "Domain name",
     inputPlaceholder: "example.com"
   },
@@ -79,7 +79,7 @@ export const tools: Tool[] = [
     description: "See response headers, redirects, caching, and server details.",
     category: "networking",
     command: "curl -I",
-    status: "backend",
+    status: "available",
     inputLabel: "Website URL",
     inputPlaceholder: "https://example.com"
   },
@@ -89,7 +89,7 @@ export const tools: Tool[] = [
     description: "Review certificate validity, issuer, names, and expiry.",
     category: "networking",
     command: "openssl",
-    status: "backend",
+    status: "available",
     inputLabel: "Hostname",
     inputPlaceholder: "example.com"
   },
@@ -99,7 +99,7 @@ export const tools: Tool[] = [
     description: "Check reachability, response status, and timing on demand.",
     category: "networking",
     command: "status",
-    status: "backend",
+    status: "available",
     inputLabel: "Website URL",
     inputPlaceholder: "https://example.com"
   },
@@ -109,7 +109,7 @@ export const tools: Tool[] = [
     description: "Test whether a public TCP port is reachable from the internet.",
     category: "networking",
     command: "nc -z",
-    status: "backend",
+    status: "available",
     inputLabel: "Host and port",
     inputPlaceholder: "example.com:443"
   },
@@ -119,7 +119,7 @@ export const tools: Tool[] = [
     description: "See the public IP address exposed by your connection.",
     category: "ip",
     command: "whoami",
-    status: "backend",
+    status: "available",
     inputLabel: "Public address",
     inputPlaceholder: "Detected automatically"
   },
@@ -129,7 +129,7 @@ export const tools: Tool[] = [
     description: "Estimate the country, region, and network for a public IP.",
     category: "ip",
     command: "geoip",
-    status: "backend",
+    status: "available",
     inputLabel: "IP address",
     inputPlaceholder: "8.8.8.8"
   },
@@ -139,7 +139,7 @@ export const tools: Tool[] = [
     description: "Find the autonomous system and provider behind an IP.",
     category: "ip",
     command: "whois",
-    status: "backend",
+    status: "available",
     inputLabel: "IP address or ASN",
     inputPlaceholder: "1.1.1.1 or AS13335"
   },

@@ -7,7 +7,7 @@ export function ToolCard({ tool }: { tool: Tool }) {
       <div className="tool-card-topline">
         <span className="command-icon" aria-hidden="true">{tool.command}</span>
         <span className={`availability ${tool.status === "available" ? "is-live" : ""}`}>
-          {tool.status === "available" ? "Browser ready" : "Backend required"}
+          {tool.status === "available" ? "Ready" : "Worker required"}
         </span>
       </div>
       <div>
