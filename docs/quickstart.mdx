@@ -1,35 +1,48 @@
 ---
 title: Quickstart
-description: Run a speed test and understand the result.
+description: Open a diagnostic tool, run a check, and understand the result.
 ---
 
 # Quickstart
 
-Run the public tester from any modern browser.
+Run a diagnostic from any modern browser.
 
-## 1. Open the tester
+## 1. Open the toolbox
 
-Go to [buffer.lol](https://buffer.lol) and choose **Start test**.
+Go to [buffer.lol](https://buffer.lol) and choose a tool from the networking, IP, or developer sections.
 
-## 2. Pick a test size
+## 2. Enter a target
 
-The default **Standard** profile is usually enough. Use **Light** on metered connections and **Heavy** when you want a larger sample.
+Server-backed diagnostics ask for a target such as a domain, URL, IP address, ASN, or `host:port` pair. Browser-only utilities ask for the text or data you want to transform.
 
-## 3. Read the report
+```text
+DNS Lookup         example.com
+HTTP Headers      https://example.com
+SSL Checker       example.com
+Port Checker      example.com:443
+ASN Lookup        1.1.1.1 or AS13335
+```
 
-The report combines four measurements:
+## 3. Run the check
 
-| Metric | What it tells you |
+Choose **Run check** for server-backed diagnostics. Tools such as JSON Formatter, Base64, Hash Generator, URL Parser, JWT Decoder, and Regex Tester run directly in the browser.
+
+## 4. Interpret the output
+
+Most server-backed tools return structured JSON. The result panel also shows how long the request took and a `requestId` you can use when comparing results or debugging a failed request.
+
+| Signal | What it tells you |
 | --- | --- |
-| Download | How quickly your browser receives data |
-| Upload | How quickly your browser sends data |
-| Ping | How responsive the connection is |
-| Jitter | How much latency changes between samples |
+| DNS records | Which addresses, mail exchangers, nameservers, and text records are published |
+| HTTP status and headers | Whether a URL responds and which caching, server, redirect, and content metadata it exposes |
+| TLS certificate | Whether the certificate is accepted, who issued it, and when it expires |
+| Port reachability | Whether a public TCP port accepts connections from the diagnostics service |
+| RDAP and ASN data | Which network, registrar, country, or autonomous system is associated with a target |
 
-## 4. Repeat where it matters
+## 5. Compare when needed
 
-Run one test near your router and another where you actually work, stream, or play. If the numbers change sharply, the issue is probably local Wi-Fi quality rather than the internet plan itself.
+Repeat the same check after a DNS change, deploy, certificate renewal, or firewall update. Network data can vary by resolver, route, proxy, and cache timing.
 
 <Tip>
-  Keep VPNs, cloud backup tools, and large downloads in mind. They can change the result even when your provider connection is healthy.
+  If a target works in your browser but fails in buffer.lol, check whether it blocks external probes, requires authentication, resolves to a private address, or only accepts traffic from a specific network.
 </Tip>

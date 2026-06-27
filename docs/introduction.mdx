@@ -1,26 +1,26 @@
 ---
 title: Introduction
-description: Browser speed testing with temporary same-origin payloads.
+description: Network, IP, web, and developer diagnostics in one browser-first toolbox.
 ---
 
 # Introduction
 
-buffer.lol is a browser-based internet speed tester. It measures download speed, upload speed, ping, and jitter, then turns those numbers into practical connection notes.
+buffer.lol is a diagnostics toolbox for quick network, IP, web, and developer checks. Use it to inspect domains, endpoints, certificates, ports, public IP details, browser signals, and everyday encoded data without opening a full monitoring suite.
 
-## What buffer.lol measures
+## What buffer.lol checks
 
 <CardGroup cols={2}>
-  <Card title="Download" icon="arrow-down">
-    Pulls uncached byte payloads from the same origin and converts transfer time into Mbps.
+  <Card title="Network diagnostics" icon="network">
+    Inspect DNS records, HTTP headers, TLS certificates, redirects, uptime, ports, robots.txt, and sitemap hints.
   </Card>
-  <Card title="Upload" icon="arrow-up">
-    Posts a temporary browser-generated payload and measures upstream throughput.
+  <Card title="IP intelligence" icon="map-pin">
+    Detect your public IP and look up geolocation, RDAP network data, and ASN ownership.
   </Card>
-  <Card title="Ping" icon="timer">
-    Samples tiny requests to estimate round-trip responsiveness.
+  <Card title="Browser utilities" icon="code">
+    Format JSON, parse URLs, decode JWTs, generate hashes and UUIDs, convert timestamps, and test regex patterns locally.
   </Card>
-  <Card title="Jitter" icon="activity">
-    Compares latency samples to show how stable the connection feels.
+  <Card title="Worker-backed checks" icon="server">
+    Ping, packet-loss sampling, and traceroute are planned for a separate worker because they need ICMP or traceroute privileges.
   </Card>
 </CardGroup>
 
@@ -35,9 +35,9 @@ Local dev   http://localhost:3000
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Run your first test and interpret the result.
+    Run your first check and interpret the result.
   </Card>
   <Card title="API Reference" icon="code" href="/api-reference/overview">
-    Read the byte endpoints used by the browser tester.
+    Call the diagnostics API used by server-side tools.
   </Card>
 </CardGroup>

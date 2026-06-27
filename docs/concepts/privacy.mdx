@@ -1,20 +1,28 @@
 ---
 title: Privacy
-description: What the speed test stores and what it does not store.
+description: How browser-local utilities differ from server-side diagnostic checks.
 ---
 
 # Privacy
 
-The speed-test endpoint moves temporary bytes for measurement. It does not persist payloads.
+buffer.lol includes two kinds of tools: browser-local utilities and server-side diagnostics. The privacy model depends on which kind of tool you open.
 
-## What stays local
+## Browser-local tools
 
-Recent result history is stored in the browser's local storage so you can compare runs from the same device.
+Developer utilities such as JSON Formatter, Base64, Hash Generator, UUID Generator, Timestamp Converter, URL Parser, JWT Decoder, Regex Tester, CIDR Calculator, and User Agent Parser run in your browser. Their input is processed by client-side JavaScript and is not sent to the diagnostics API.
 
-## What the endpoint receives
+## Server-side diagnostics
 
-The endpoint receives normal request metadata and temporary upload payloads. Uploads are capped and discarded after the request.
+Network and IP checks use `POST /api/tools/[slug]` when they need the buffer.lol server to resolve DNS, make an HTTP request, open a TCP connection, read a TLS certificate, or query RDAP and ASN data. The API receives the target you submit, normal request metadata, and the headers required to serve the response.
+
+## Target validation
+
+Server-side diagnostics reject private, local, reserved, and multicast addresses before making outbound requests. URL checks only support HTTP and HTTPS, and URLs with embedded credentials are not allowed.
+
+## Result storage
+
+The committed app displays results in the current browser session. API responses include a `requestId` for troubleshooting, but diagnostic payloads are not designed as file storage or a long-term result archive.
 
 ## What not to infer
 
-buffer.lol measures a browser-to-server path, not your full ISP contract. Your result may differ from provider tests, router tests, or tests to a closer server.
+Server-side checks describe what buffer.lol can see from its runtime. Your local network, VPN, resolver, firewall, or regional routing can produce a different result from the same target.

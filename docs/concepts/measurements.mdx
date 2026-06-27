@@ -1,38 +1,40 @@
 ---
 title: Measurements
-description: How buffer.lol turns browser requests into connection metrics.
+description: How to read the diagnostic signals returned by buffer.lol.
 ---
 
 # Measurements
 
-buffer.lol measures the connection your browser can reach right now. The result reflects device load, Wi-Fi quality, VPN routes, local congestion, and server distance.
+buffer.lol returns diagnostic signals rather than a single score. Each tool answers a narrow question about a domain, URL, certificate, network, IP address, or browser-local value.
 
-## Ping
+## DNS records
 
-Ping is estimated with small uncached requests. Lower is better for calls, games, and any interaction where waiting feels obvious.
+DNS lookups show the records published for a domain. `A` and `AAAA` records identify IPv4 and IPv6 addresses, `MX` records identify mail exchangers, `TXT` records often carry verification and policy data, and `NS` or `SOA` records describe delegation and authority.
 
-## Jitter
+## HTTP status and headers
 
-Jitter is the variation between latency samples. A connection can have a good average ping and still feel rough if jitter spikes.
+HTTP checks show the response status, response time from the diagnostics service, and headers. Headers can reveal cache behavior, redirects, content type, server metadata, security policy, and whether a target rejects `HEAD` requests.
 
-## Download
+## TLS validity
 
-Download speed is calculated from the number of bytes received and the elapsed transfer time.
+TLS checks connect to the target host, read the peer certificate, and report authorization state, protocol, cipher, issuer, names, fingerprint, and validity dates. An unauthorized result can point to an expired certificate, hostname mismatch, incomplete chain, or other trust problem.
 
-```text
-download Mbps = bytes received * 8 / elapsed seconds / 1,000,000
-```
+## Port reachability
 
-## Upload
+Port checks open a TCP connection from the diagnostics service to a public `host:port`. A reachable result means the port accepted a connection from buffer.lol; an unreachable result can mean the service is down, filtered, restricted by firewall rules, or only reachable from another network.
 
-Upload speed is measured by posting a temporary browser-generated payload to the same speed-test endpoint.
+## RDAP data
 
-## Practical thresholds
+RDAP lookups summarize domain and IP registration data from public RDAP providers. They can include network ranges, country fields, registrar or entity names, nameservers, events, and source links.
 
-| Use case | Useful target |
-| --- | --- |
-| Browsing | 5 Mbps down |
-| HD video | 15 Mbps down |
-| 4K video | 25 Mbps down |
-| Video calls | 10 Mbps up |
-| Low-lag play | Under 40 ms ping |
+## ASN data
+
+ASN checks use Team Cymru DNS data to connect a public IP address or autonomous system number to origin network records. Results can include ASN, prefix, country, registry, allocation date, and network name.
+
+## Duration
+
+Server-side API responses include `durationMs`. This is the time buffer.lol spent handling that diagnostic request, not a promise about the end user's network quality.
+
+## Worker-required checks
+
+Ping, packet-loss sampling, and traceroute need ICMP or traceroute privileges that are not reliable in ordinary serverless runtimes. buffer.lol marks those tools as worker-required until a container or VM worker is available.

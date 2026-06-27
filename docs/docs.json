@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "buffer.lol",
-  "description": "Documentation for the buffer.lol browser-based internet speed tester.",
+  "description": "Documentation for the buffer.lol diagnostics toolbox for network, IP, web, and developer checks.",
   "colors": {
     "primary": "#38BDF8",
     "light": "#60A5FA",
@@ -42,8 +42,7 @@
       {
         "group": "API Reference",
         "pages": [
-          "api-reference/overview",
-          "api-reference/speed-test"
+          "api-reference/overview"
         ]
       }
     ],
@@ -66,8 +65,8 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Run test",
-      "href": "http://localhost:3000/#speed-test"
+      "label": "Open tools",
+      "href": "https://buffer.lol/#networking"
     }
   },
   "footer": {

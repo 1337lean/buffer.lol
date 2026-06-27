@@ -1,31 +1,112 @@
 ---
 title: API Reference
-description: Endpoint overview for buffer.lol speed tests.
+description: Endpoint overview for buffer.lol diagnostics tools.
 ---
 
 # API Reference
 
-The public web tester calls one same-origin endpoint for download, upload, ping, and jitter measurement.
+Server-backed tools call one same-origin diagnostics endpoint. Each request runs a single tool by slug and returns a small JSON envelope.
 
 ## Endpoint
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/speed-test?bytes=2097152` | Generate an uncached binary payload |
-| `POST` | `/api/speed-test` | Accept a capped binary upload and return received bytes |
+| `POST` | `/api/tools/[slug]` | Run one diagnostics tool |
 
-## Limits
+## Request body
 
-| Limit | Value |
+```json
+{
+  "input": "example.com"
+}
+```
+
+`input` is a string. The expected format depends on the tool.
+
+## Response envelope
+
+Every response uses the same top-level shape:
+
+```json
+{
+  "data": {},
+  "durationMs": 142,
+  "requestId": "2f2fb1b9-76a0-48aa-b789-a6e76fbdd3c8"
+}
+```
+
+Errors use the same envelope with `error` instead of `data`:
+
+```json
+{
+  "error": "Enter a valid public hostname.",
+  "durationMs": 4,
+  "requestId": "2f2fb1b9-76a0-48aa-b789-a6e76fbdd3c8"
+}
+```
+
+## Available slugs
+
+| Slug | Input | Returns |
 | --- | --- |
-| Minimum generated download | 1 KB |
-| Maximum generated download | 12 MB |
-| Maximum accepted upload | 12 MB |
+| `dns-lookup` | Domain name | A, AAAA, MX, TXT, CNAME, NS, and SOA records |
+| `http-headers` | HTTP or HTTPS URL | Status, response time, and response headers |
+| `ssl-checker` | Hostname or `host:port` | TLS authorization, protocol, cipher, and certificate summary |
+| `uptime` | HTTP or HTTPS URL | Online flag, status, status text, and response time |
+| `port-checker` | `host:port` | TCP reachability, resolved address, and timing |
+| `my-ip` | Empty string | Public IP inferred from request headers |
+| `ip-geolocation` | Public IP address | RDAP network summary, country, and ASN data |
+| `asn-lookup` | Public IP address or ASN | Team Cymru ASN records |
+| `whois-lookup` | Domain or public IP address | RDAP registration and network summary |
+| `redirect-checker` | HTTP or HTTPS URL | Redirect chain up to eight hops |
+| `robots-sitemap` | HTTP or HTTPS URL | robots.txt preview, declared sitemaps, and sitemap.xml status |
+
+## Example
+
+```bash
+curl -s https://buffer.lol/api/tools/dns-lookup \
+  -H 'Content-Type: application/json' \
+  -d '{"input":"example.com"}'
+```
+
+```json
+{
+  "data": {
+    "domain": "example.com",
+    "records": {
+      "A": ["93.184.216.34"],
+      "MX": []
+    },
+    "errors": {
+      "MX": "ENODATA"
+    }
+  },
+  "durationMs": 31,
+  "requestId": "2f2fb1b9-76a0-48aa-b789-a6e76fbdd3c8"
+}
+```
+
+## Validation and limits
+
+| Rule | Details |
+| --- | --- |
+| Input length | Inputs longer than 2,048 characters are rejected |
+| URLs | Only HTTP and HTTPS URLs are supported |
+| Credentials | URLs with embedded credentials are rejected |
+| Address safety | Private, local, reserved, and multicast IP addresses are rejected for outbound checks |
+| Fetch timeout | HTTP and RDAP provider requests time out after 8 seconds |
+| TCP timeout | Port and TLS checks time out after 7 seconds |
+
+## Worker-required tools
+
+These slugs exist in the product catalog but return `501` from the shared API until a container or VM worker is attached:
+
+| Slug | Why |
+| --- | --- |
+| `ping` | ICMP ping requires raw socket permissions |
+| `packet-loss` | Packet-loss sampling requires ICMP support |
+| `traceroute` | Traceroute requires traceroute privileges |
 
 ## Authentication
 
 No authentication is required.
-
-<Card title="Speed Test Endpoint" icon="gauge" href="/api-reference/speed-test">
-  Request and response details for `/api/speed-test`.
-</Card>
