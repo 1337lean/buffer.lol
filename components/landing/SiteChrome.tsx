@@ -7,6 +7,8 @@ type SiteChromeProps = {
 
 export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "children">) {
   const prefix = navHomePrefix || "/";
+  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
+
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label="buffer.lol home">
@@ -17,17 +19,20 @@ export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "childr
         <Link href={`${prefix}#networking`}>Networking</Link>
         <Link href={`${prefix}#ip`}>IP tools</Link>
         <Link href={`${prefix}#developer`}>Developer</Link>
+        {docsUrl && <a href={docsUrl}>Docs</a>}
       </nav>
     </header>
   );
 }
 
 export function SiteFooter() {
+  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL;
+
   return (
     <footer className="site-footer">
       <div className="footer-brand"><Link className="brand" href="/"><span className="brand-prompt">&gt;_</span>buffer<span>.lol</span></Link><p>Fast, simple networking tools.</p></div>
-      <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link></div>
-      <div className="footer-links"><a href="#" aria-label="GitHub link coming soon">GitHub ↗</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
+      <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link>{docsUrl && <a href={docsUrl}>Docs</a>}</div>
+      <div className="footer-links"><a href="https://github.com/roger/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
       <div className="footer-bottom"><span>© 2026 buffer.lol</span><span className="system-status"><i /> All systems nominal</span><span>Built for the curious.</span></div>
     </footer>
   );

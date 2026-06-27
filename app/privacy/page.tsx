@@ -20,7 +20,7 @@ export default function PrivacyPage() {
           <h2>What We Collect</h2>
           <ul>
             <li>Input used in browser-ready developer tools is processed on your device and is not submitted to buffer.lol.</li>
-            <li>When network tools become available, the target and request metadata needed to complete the check may be processed temporarily.</li>
+            <li>Server-backed network and IP tools process the target you submit, the request metadata needed to complete the check, and short-lived diagnostic results.</li>
             <li>Your email address and message content if you contact us.</li>
             <li>Basic technical metadata collected by the hosting platform, such as request time, IP address, user agent, and abuse-prevention signals.</li>
           </ul>
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           <p>We use submitted data to provide requested tools, respond to messages, prevent abuse, and improve reliability. We do not sell contact emails.</p>
 
           <h2>Tool Data</h2>
-          <p>JSON, Base64, hashing, UUID, timestamp, and user-agent utilities run locally in your browser. Tools marked Backend required are interface previews and do not currently submit or return live network results.</p>
+          <p>JSON, Base64, hashing, UUID, timestamp, URL parsing, JWT decoding, regex testing, CIDR calculations, and user-agent utilities run locally in your browser. Server-backed DNS, HTTP, TLS, uptime, port, RDAP, redirect, robots/sitemap, public IP, geolocation, and ASN tools send the target to buffer.lol only to produce the requested result. Ping, packet-loss, and traceroute remain worker-required and do not currently return live ICMP or route data.</p>
 
           <h2>Removal Requests</h2>
           <p>To ask for contact data removal, email <a href="mailto:hello@buffer.lol">hello@buffer.lol</a> from the address you used.</p>

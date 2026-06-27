@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "../_lib/rate-limit";
 
 const MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
@@ -7,6 +8,19 @@ const DEFAULT_DOWNLOAD_BYTES = 2 * 1024 * 1024;
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: "speed-test:get",
+    limit: 20,
+    windowMs: 60_000
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many speed test requests. Please slow down and try again shortly." },
+      { status: 429, headers: { "Cache-Control": "no-store, max-age=0", ...rateLimit.headers } }
+    );
+  }
+
   const bytes = clampByteCount(request.nextUrl.searchParams.get("bytes"), DEFAULT_DOWNLOAD_BYTES, MAX_DOWNLOAD_BYTES);
   const payload = new Uint8Array(bytes);
 
@@ -19,22 +33,42 @@ export async function GET(request: NextRequest) {
       "Cache-Control": "no-store, max-age=0",
       "Content-Length": String(bytes),
       "Content-Type": "application/octet-stream",
-      "X-Test-Bytes": String(bytes)
+      "X-Test-Bytes": String(bytes),
+      ...rateLimit.headers
     }
   });
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: "speed-test:post",
+    limit: 20,
+    windowMs: 60_000
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many speed test requests. Please slow down and try again shortly." },
+      { status: 429, headers: { "Cache-Control": "no-store, max-age=0", ...rateLimit.headers } }
+    );
+  }
+
   const contentLength = Number(request.headers.get("content-length") || 0);
 
   if (contentLength > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Upload test payload is too large." }, { status: 413 });
+    return NextResponse.json(
+      { error: "Upload test payload is too large." },
+      { status: 413, headers: { "Cache-Control": "no-store, max-age=0", ...rateLimit.headers } }
+    );
   }
 
   const body = await request.arrayBuffer();
 
   if (body.byteLength > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Upload test payload is too large." }, { status: 413 });
+    return NextResponse.json(
+      { error: "Upload test payload is too large." },
+      { status: 413, headers: { "Cache-Control": "no-store, max-age=0", ...rateLimit.headers } }
+    );
   }
 
   return NextResponse.json(
@@ -45,7 +79,8 @@ export async function POST(request: NextRequest) {
     },
     {
       headers: {
-        "Cache-Control": "no-store, max-age=0"
+        "Cache-Control": "no-store, max-age=0",
+        ...rateLimit.headers
       }
     }
   );

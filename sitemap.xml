@@ -12,6 +12,10 @@
   <url><loc>https://buffer.lol/tools/ssl-checker</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/uptime</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/port-checker</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/cidr-calculator</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/whois-lookup</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/redirect-checker</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/robots-sitemap</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/my-ip</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/ip-geolocation</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/asn-lookup</loc><lastmod>2026-06-22</lastmod></url>
@@ -21,6 +25,9 @@
   <url><loc>https://buffer.lol/tools/hash-generator</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/uuid-generator</loc><lastmod>2026-06-22</lastmod></url>
   <url><loc>https://buffer.lol/tools/timestamp</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/url-parser</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/jwt-decoder</loc><lastmod>2026-06-22</lastmod></url>
+  <url><loc>https://buffer.lol/tools/regex-tester</loc><lastmod>2026-06-22</lastmod></url>
   <url>
     <loc>https://buffer.lol/privacy</loc>
     <lastmod>2026-06-22</lastmod>

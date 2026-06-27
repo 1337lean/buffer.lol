@@ -3,6 +3,7 @@ import net from "node:net";
 import tls from "node:tls";
 import { domainToASCII } from "node:url";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "../../_lib/rate-limit";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 type JsonRecord = Record<string, unknown>;
@@ -51,11 +52,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
       throw new ApiError("Unknown tool endpoint.", 404);
     }
 
+    const rateLimit = checkRateLimit(request, {
+      keyPrefix: `tools:${slug}`,
+      limit: 30,
+      windowMs: 60_000
+    });
+
+    if (!rateLimit.allowed) {
+      return envelope({
+        error: "Too many requests. Please slow down and try again shortly.",
+        started,
+        requestId,
+        status: 429,
+        headers: rateLimit.headers
+      });
+    }
+
     const body = await readJsonBody(request);
     const input = typeof body.input === "string" ? body.input : "";
     const data = await runTool(slug, input, request);
 
-    return envelope({ data, started, requestId });
+    return envelope({ data, started, requestId, headers: rateLimit.headers });
   } catch (error) {
     const status = error instanceof ApiError ? error.status : 500;
     const message = error instanceof Error ? error.message : "Unexpected backend error.";
@@ -321,7 +338,7 @@ async function readJsonBody(request: NextRequest) {
   }
 }
 
-function envelope(options: { data?: unknown; error?: string; started: number; requestId: string; status?: number }) {
+function envelope(options: { data?: unknown; error?: string; started: number; requestId: string; status?: number; headers?: Record<string, string> }) {
   const payload: Envelope = {
     durationMs: Date.now() - options.started,
     requestId: options.requestId
@@ -332,7 +349,7 @@ function envelope(options: { data?: unknown; error?: string; started: number; re
 
   return NextResponse.json(payload, {
     status: options.status ?? 200,
-    headers: { "Cache-Control": "no-store, max-age=0" }
+    headers: { "Cache-Control": "no-store, max-age=0", ...(options.headers ?? {}) }
   });
 }
 
