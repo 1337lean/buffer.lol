@@ -1,9 +1,13 @@
 import { promises as dns } from "node:dns";
+import { createHash } from "node:crypto";
 import net from "node:net";
 import tls from "node:tls";
 import { domainToASCII } from "node:url";
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "../../_lib/client-ip";
+import { ConcurrencyLimitError, dedupe, withCache, withConcurrencyLimit } from "../../_lib/request-cache";
 import { checkRateLimit } from "../../_lib/rate-limit";
+import { isPublicIp, normalizeIpLiteral } from "../../_lib/ip";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 type JsonRecord = Record<string, unknown>;
@@ -13,7 +17,12 @@ type Envelope = { data?: unknown; error?: string; durationMs: number; requestId:
 const FETCH_TIMEOUT_MS = 8_000;
 const TCP_TIMEOUT_MS = 7_000;
 const MAX_TEXT_BYTES = 128 * 1024;
+const MAX_BODY_BYTES = 4 * 1024;
 const USER_AGENT = "buffer.lol diagnostics/0.1";
+const DNS_CACHE_TTL_MS = 60_000;
+const RDAP_CACHE_TTL_MS = 60 * 60_000;
+const ASN_CACHE_TTL_MS = 30 * 60_000;
+const LIVE_DEDUPE_MS = 1_500;
 
 const implementedTools = new Set([
   "dns-lookup",
@@ -42,21 +51,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const started = Date.now();
   const requestId = crypto.randomUUID();
   const { slug } = await context.params;
+  let responseHeaders: Record<string, string> = {};
 
   try {
-    if (workerOnlyTools[slug]) {
-      throw new ApiError(workerOnlyTools[slug], 501);
-    }
-
-    if (!implementedTools.has(slug)) {
+    if (!implementedTools.has(slug) && !workerOnlyTools[slug]) {
       throw new ApiError("Unknown tool endpoint.", 404);
     }
 
-    const rateLimit = checkRateLimit(request, {
+    enforceSameOrigin(request);
+    enforceBodySize(request);
+
+    const body = await readJsonBody(request);
+    const input = typeof body.input === "string" ? body.input : "";
+    const rateLimit = await checkRateLimit(request, {
       keyPrefix: `tools:${slug}`,
       limit: 30,
-      windowMs: 60_000
+      windowMs: 60_000,
+      targetKey: hashKey(input.trim().toLowerCase() || "empty")
     });
+    responseHeaders = rateLimit.headers;
 
     if (!rateLimit.allowed) {
       return envelope({
@@ -64,21 +77,91 @@ export async function POST(request: NextRequest, context: RouteContext) {
         started,
         requestId,
         status: 429,
-        headers: rateLimit.headers
+        headers: responseHeaders
       });
     }
 
-    const body = await readJsonBody(request);
-    const input = typeof body.input === "string" ? body.input : "";
-    const data = await runTool(slug, input, request);
+    const data = workerOnlyTools[slug]
+      ? await runWorkerTool(slug, input, requestId)
+      : await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, () =>
+        withConcurrencyLimit(() => runTool(slug, input, request))
+      );
 
-    return envelope({ data, started, requestId, headers: rateLimit.headers });
+    return envelope({ data, started, requestId, headers: responseHeaders });
   } catch (error) {
-    const status = error instanceof ApiError ? error.status : 500;
+    const status = error instanceof ApiError ? error.status : error instanceof ConcurrencyLimitError ? 503 : 500;
     const message = error instanceof Error ? error.message : "Unexpected backend error.";
 
-    return envelope({ error: message, started, requestId, status });
+    return envelope({ error: message, started, requestId, status, headers: responseHeaders });
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  try {
+    enforceSameOrigin(request);
+  } catch {
+    return new NextResponse(null, { status: 403, headers: { Vary: "Origin" } });
+  }
+
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Max-Age": "600",
+      Vary: "Origin"
+    }
+  });
+}
+
+async function runWorkerTool(slug: string, input: string, requestId: string) {
+  if (process.env.ENABLE_WORKER_TOOLS !== "true") {
+    throw new ApiError(`${workerOnlyTools[slug]} Worker-backed tools are disabled until the worker health check is green.`, 501);
+  }
+
+  const workerUrl = process.env.DIAGNOSTICS_WORKER_URL;
+  if (!workerUrl) throw new ApiError("Worker-backed tools are enabled, but DIAGNOSTICS_WORKER_URL is not configured.", 503);
+
+  const endpoint = new URL(`/api/${slug}`, workerUrl);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+      "X-Request-Id": requestId,
+      ...(process.env.DIAGNOSTICS_WORKER_TOKEN ? { Authorization: `Bearer ${process.env.DIAGNOSTICS_WORKER_TOKEN}` } : {})
+    },
+    body: JSON.stringify({ input }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+  }).catch((error: unknown) => {
+    throw fetchErrorToApiError(error);
+  });
+
+  const payload = await response.json().catch(() => ({})) as Envelope;
+
+  if (!response.ok || payload.error) {
+    throw new ApiError(payload.error || `Worker returned HTTP ${response.status}.`, response.ok ? 502 : response.status);
+  }
+
+  return payload.data;
+}
+
+function enforceSameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return;
+
+  const requestOrigin = new URL(request.url).origin;
+  if (origin !== requestOrigin) throw new ApiError("Cross-origin API requests are not allowed.", 403);
+}
+
+function enforceBodySize(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") || "0");
+  if (contentLength > MAX_BODY_BYTES) throw new ApiError("Request body is too large.", 413);
+}
+
+function hashKey(value: string) {
+  return createHash("sha256").update(value).digest("hex").slice(0, 32);
 }
 
 async function runTool(slug: string, input: string, request: NextRequest) {
@@ -112,27 +195,30 @@ async function runTool(slug: string, input: string, request: NextRequest) {
 
 async function lookupDns(input: string) {
   const domain = normalizeHostname(requireInput(input, "Enter a domain name."));
-  const lookups = await Promise.allSettled([
-    resolveRecord("A", () => dns.resolve4(domain)),
-    resolveRecord("AAAA", () => dns.resolve6(domain)),
-    resolveRecord("MX", () => dns.resolveMx(domain)),
-    resolveRecord("TXT", async () => (await dns.resolveTxt(domain)).map((record) => record.join(""))),
-    resolveRecord("CNAME", () => dns.resolveCname(domain)),
-    resolveRecord("NS", () => dns.resolveNs(domain)),
-    resolveRecord("SOA", () => dns.resolveSoa(domain))
-  ]);
 
-  const records: JsonRecord = {};
-  const errors: JsonRecord = {};
+  return withCache(`dns:${domain}`, DNS_CACHE_TTL_MS, async () => {
+    const lookups = await Promise.allSettled([
+      resolveRecord("A", () => dns.resolve4(domain)),
+      resolveRecord("AAAA", () => dns.resolve6(domain)),
+      resolveRecord("MX", () => dns.resolveMx(domain)),
+      resolveRecord("TXT", async () => (await dns.resolveTxt(domain)).map((record) => record.join(""))),
+      resolveRecord("CNAME", () => dns.resolveCname(domain)),
+      resolveRecord("NS", () => dns.resolveNs(domain)),
+      resolveRecord("SOA", () => dns.resolveSoa(domain))
+    ]);
 
-  for (const result of lookups) {
-    if (result.status === "fulfilled") {
-      records[result.value.type] = result.value.records;
-      if (result.value.error) errors[result.value.type] = result.value.error;
+    const records: JsonRecord = {};
+    const errors: JsonRecord = {};
+
+    for (const result of lookups) {
+      if (result.status === "fulfilled") {
+        records[result.value.type] = result.value.records;
+        if (result.value.error) errors[result.value.type] = result.value.error;
+      }
     }
-  }
 
-  return { domain, records, errors };
+    return { domain, records, errors };
+  });
 }
 
 async function inspectHeaders(input: string) {
@@ -278,30 +364,34 @@ async function checkPort(input: string) {
 async function lookupRdap(input: string) {
   const target = normalizeLookupTarget(input);
   const rdapUrl = net.isIP(target) ? `https://rdap.org/ip/${target}` : `https://rdap.org/domain/${target}`;
-  const data = await fetchJson(rdapUrl);
+  const data = await fetchJson(rdapUrl, `rdap:${target}`, RDAP_CACHE_TTL_MS);
 
-  return summarizeRdap(target, data);
+  return { provider: "rdap.org", ...summarizeRdap(target, data) };
 }
 
 function detectClientIp(request: NextRequest) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwardedFor || request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "Unavailable in this runtime";
+  const client = getClientIp(request);
 
   return {
-    ip,
-    source: forwardedFor ? "x-forwarded-for" : "request headers",
-    note: "In local development this may be a loopback address; behind production proxies it should be the visitor-facing address."
+    ip: client.ip || "Unavailable in this runtime",
+    source: client.source,
+    trustedProxyHeaders: client.trustedProxyHeaders,
+    headerPrecedence: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
+    note: client.trustedProxyHeaders
+      ? "Production proxy headers are trusted by configuration, and Cloudflare's visitor header wins when present."
+      : "Proxy IP headers are ignored until TRUST_PROXY_HEADERS=true or a trusted platform is configured."
   };
 }
 
 async function lookupIpNetwork(input: string) {
   const ip = requirePublicIp(input);
-  const [rdap, asn] = await Promise.allSettled([fetchJson(`https://rdap.org/ip/${ip}`), lookupAsn(ip)]);
+  const [rdap, asn] = await Promise.allSettled([fetchJson(`https://rdap.org/ip/${ip}`, `rdap:${ip}`, RDAP_CACHE_TTL_MS), lookupAsn(ip)]);
   const rdapData = rdap.status === "fulfilled" ? rdap.value : {};
   const summary = summarizeRdap(ip, rdapData);
 
   return {
     ip,
+    providers: ["rdap.org", "Team Cymru"],
     country: stringField(rdapData.country),
     network: summary,
     asn: asn.status === "fulfilled" ? asn.value : null
@@ -312,13 +402,17 @@ async function lookupAsn(input: string) {
   const target = requireInput(input, "Enter a public IP address or ASN.").toUpperCase().replace(/^AS\s*/, "AS");
   const asnMatch = target.match(/^AS?(\d{1,10})$/);
   const query = asnMatch ? `AS${asnMatch[1]}.asn.cymru.com` : toCymruOriginQuery(requirePublicIp(target));
-  const rows = await dns.resolveTxt(query);
-  const parsedRows = rows.map((row) => parseCymruRow(row.join("")));
 
-  return {
-    query: target,
-    records: parsedRows
-  };
+  return withCache(`asn:${query}`, ASN_CACHE_TTL_MS, async () => {
+    const rows = await dns.resolveTxt(query);
+    const parsedRows = rows.map((row) => parseCymruRow(row.join("")));
+
+    return {
+      provider: "Team Cymru",
+      query: target,
+      records: parsedRows
+    };
+  });
 }
 
 async function resolveRecord(type: string, resolver: () => Promise<unknown>) {
@@ -385,17 +479,18 @@ function normalizeHttpUrl(input: string) {
 
 function normalizeLookupTarget(input: string) {
   const raw = requireInput(input, "Enter a domain or public IP address.");
+  const maybeIp = normalizeIpLiteral(raw);
 
-  if (net.isIP(raw)) {
-    if (!isPublicIp(raw)) throw new ApiError("Private, local, reserved, and multicast IPs are not allowed.", 400);
-    return raw;
+  if (net.isIP(maybeIp)) {
+    if (!isPublicIp(maybeIp)) throw new ApiError("Private, local, reserved, and multicast IPs are not allowed.", 400);
+    return maybeIp;
   }
 
   return normalizeHostname(raw.replace(/^https?:\/\//i, "").split("/")[0]);
 }
 
 function normalizeHostname(input: string) {
-  const raw = input.trim().replace(/\.$/, "").toLowerCase();
+  const raw = normalizeIpLiteral(input).replace(/\.$/, "").toLowerCase();
 
   if (net.isIP(raw)) {
     if (!isPublicIp(raw)) throw new ApiError("Private, local, reserved, and multicast IPs are not allowed.", 400);
@@ -418,9 +513,21 @@ function normalizeHostname(input: string) {
 
 function parseHostAndPort(input: string, defaultPort: number | undefined) {
   const raw = requireInput(input, defaultPort ? "Enter a hostname." : "Enter a host and port.");
-  const fromUrl = raw.includes("://") ? new URL(raw) : null;
+  let fromUrl: URL | null = null;
+
+  if (raw.includes("://")) {
+    try {
+      fromUrl = new URL(raw);
+    } catch {
+      throw new ApiError("Enter a valid host and port.", 400);
+    }
+  }
 
   if (fromUrl) {
+    if (fromUrl.username || fromUrl.password) {
+      throw new ApiError("URLs with embedded credentials are not allowed.", 400);
+    }
+
     return {
       host: fromUrl.hostname,
       port: parsePort(fromUrl.port || String(defaultPort), Boolean(defaultPort))
@@ -481,55 +588,12 @@ async function resolvePublicHost(hostname: string) {
 }
 
 function requirePublicIp(input: string) {
-  const raw = requireInput(input, "Enter a public IP address.").replace(/^\[|\]$/g, "");
+  const raw = normalizeIpLiteral(requireInput(input, "Enter a public IP address."));
 
   if (!net.isIP(raw)) throw new ApiError("Enter a valid public IP address.", 400);
   if (!isPublicIp(raw)) throw new ApiError("Private, local, reserved, and multicast IPs are not allowed.", 400);
 
   return raw;
-}
-
-function isPublicIp(address: string) {
-  if (net.isIPv4(address)) {
-    const parts = address.split(".").map(Number);
-    const value = (((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>> 0;
-    const ranges: Array<[number, number]> = [
-      [0x00000000, 0x00ffffff],
-      [0x0a000000, 0x0affffff],
-      [0x64400000, 0x647fffff],
-      [0x7f000000, 0x7fffffff],
-      [0xa9fe0000, 0xa9feffff],
-      [0xac100000, 0xac1fffff],
-      [0xc0000000, 0xc00000ff],
-      [0xc0000200, 0xc00002ff],
-      [0xc0a80000, 0xc0a8ffff],
-      [0xc6120000, 0xc613ffff],
-      [0xc6336400, 0xc63364ff],
-      [0xcb007100, 0xcb0071ff],
-      [0xe0000000, 0xefffffff],
-      [0xf0000000, 0xffffffff]
-    ];
-
-    return !ranges.some(([start, end]) => value >= start && value <= end);
-  }
-
-  const normalized = address.toLowerCase();
-  const mappedIpv4 = normalized.match(/::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
-
-  if (mappedIpv4) return isPublicIp(mappedIpv4[1]);
-
-  return !(
-    normalized === "::" ||
-    normalized === "::1" ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    normalized.startsWith("fe8") ||
-    normalized.startsWith("fe9") ||
-    normalized.startsWith("fea") ||
-    normalized.startsWith("feb") ||
-    normalized.startsWith("ff") ||
-    normalized.startsWith("2001:db8")
-  );
 }
 
 function safeFetch(url: URL, init: RequestInit) {
@@ -542,18 +606,24 @@ function safeFetch(url: URL, init: RequestInit) {
       "User-Agent": USER_AGENT,
       ...(init.headers ?? {})
     }
+  }).catch((error: unknown) => {
+    throw fetchErrorToApiError(error);
   });
 }
 
-async function fetchJson(url: string) {
-  const response = await fetch(url, {
-    headers: { Accept: "application/rdap+json, application/json", "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+async function fetchJson(url: string, cacheKey: string, ttlMs: number) {
+  return withCache(cacheKey, ttlMs, async () => {
+    const response = await fetch(url, {
+      headers: { Accept: "application/rdap+json, application/json", "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    }).catch((error: unknown) => {
+      throw fetchErrorToApiError(error);
+    });
+
+    if (!response.ok) throw new ApiError(`Lookup provider returned HTTP ${response.status}.`, 502);
+
+    return response.json() as Promise<JsonRecord>;
   });
-
-  if (!response.ok) throw new ApiError(`Lookup provider returned HTTP ${response.status}.`, 502);
-
-  return response.json() as Promise<JsonRecord>;
 }
 
 async function readLimitedText(response: Response, limit: number) {
@@ -711,6 +781,14 @@ function parseCymruRow(row: string) {
 function dnsErrorMessage(error: unknown) {
   if (isRecord(error) && typeof error.code === "string") return error.code;
   return error instanceof Error ? error.message : "Lookup failed";
+}
+
+function fetchErrorToApiError(error: unknown) {
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+    return new ApiError("Network request timed out.", 504);
+  }
+
+  return new ApiError(error instanceof Error ? error.message : "Network request failed.", 502);
 }
 
 function stringField(value: unknown) {

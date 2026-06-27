@@ -15,6 +15,8 @@ Developer utilities such as JSON Formatter, Base64, Hash Generator, UUID Generat
 
 Network and IP checks use `POST /api/tools/[slug]` when they need the buffer.lol server to resolve DNS, make an HTTP request, open a TCP connection, read a TLS certificate, or query RDAP and ASN data. The API receives the target you submit, normal request metadata, and the headers required to serve the response.
 
+RDAP results are requested from rdap.org, and ASN results are requested from Team Cymru's DNS ASN service. DNS, RDAP, and ASN responses may be cached briefly to reduce repeated provider calls.
+
 ## Target validation
 
 Server-side diagnostics reject private, local, reserved, and multicast addresses before making outbound requests. URL checks only support HTTP and HTTPS, and URLs with embedded credentials are not allowed.
@@ -22,6 +24,8 @@ Server-side diagnostics reject private, local, reserved, and multicast addresses
 ## Result storage
 
 The committed app displays results in the current browser session. API responses include a `requestId` for troubleshooting, but diagnostic payloads are not designed as file storage or a long-term result archive.
+
+Rate limiting uses a hashed client-and-target key. In production, proxy IP headers are ignored unless the deployment explicitly trusts its platform or reverse proxy; when enabled, `cf-connecting-ip` wins over `x-real-ip`, which wins over `x-forwarded-for`.
 
 ## What not to infer
 

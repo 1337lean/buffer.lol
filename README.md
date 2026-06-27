@@ -37,6 +37,13 @@ npm run build
 
 No environment variables are required for local development. Set `NEXT_PUBLIC_DOCS_URL=https://docs.buffer.lol` when the docs subdomain is ready, or to a temporary Mintlify preview URL if you publish the docs before DNS is final.
 
+Production diagnostics support these optional settings:
+
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` enable a shared Redis-backed rate limiter. Without them, local development uses an in-memory fallback.
+- `TRUST_PROXY_HEADERS=true` or `TRUSTED_PROXY_PLATFORM=vercel|netlify|cloudflare` allows `my-ip` and rate limiting to trust proxy IP headers. Header precedence is `cf-connecting-ip`, then `x-real-ip`, then the first `x-forwarded-for` value.
+- `ENABLE_WORKER_TOOLS=true`, `DIAGNOSTICS_WORKER_URL`, and optional `DIAGNOSTICS_WORKER_TOKEN` proxy ping, packet-loss, and traceroute through the same `/api/tools/[slug]` public API shape.
+- `DIAGNOSTICS_MAX_CONCURRENCY` caps live diagnostics work per instance.
+
 ## Routes
 
 Public:
@@ -52,9 +59,9 @@ API:
 
 ## Backend work
 
-Most network/IP tools now use `POST /api/tools/[slug]` with a `{ "input": "..." }` JSON body and return `{ data, error, durationMs, requestId }`. The committed UI exposes DNS lookup, HTTP headers, SSL checker, uptime, port checker, public IP, IP geolocation/network details, and ASN lookup through that route.
+Most network/IP tools now use `POST /api/tools/[slug]` with a `{ "input": "..." }` JSON body and return `{ data, error, durationMs, requestId }`. The API rate limits by client and target, rejects cross-origin POSTs, caps request bodies, blocks private/reserved outbound targets, deduplicates identical in-flight work, and caches DNS, RDAP, and ASN results briefly where safe.
 
-The shared API route also includes handlers for RDAP domain lookups, redirect checks, and robots/sitemap checks so those pages can be enabled when their tool registry entries land. Ping, packet loss, and traceroute still need a separate container or VM worker because ICMP and traceroute are not reliable in serverless runtimes.
+The shared API route also includes handlers for RDAP domain lookups, redirect checks, and robots/sitemap checks. Ping, packet loss, and traceroute still need a separate container or VM worker because ICMP and traceroute are not reliable in serverless runtimes; when the worker flag and URL are configured, `/api/tools/[slug]` proxies those tools internally and keeps the public response envelope stable.
 
 ## Docs
 

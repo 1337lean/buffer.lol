@@ -96,16 +96,36 @@ curl -s https://buffer.lol/api/tools/dns-lookup \
 | Address safety | Private, local, reserved, and multicast IP addresses are rejected for outbound checks |
 | Fetch timeout | HTTP and RDAP provider requests time out after 8 seconds |
 | TCP timeout | Port and TLS checks time out after 7 seconds |
+| Body size | Request bodies over 4 KiB are rejected |
+| Cross-origin requests | Browser requests with a foreign `Origin` header are rejected |
+| Rate limiting | Requests are limited by client identity, tool slug, and target |
+| Short cache | DNS responses cache for 60 seconds; RDAP caches for 1 hour; ASN responses cache for 30 minutes |
+
+## Providers and attribution
+
+RDAP-backed responses use [rdap.org](https://rdap.org/) for domain and IP registration data. ASN responses use [Team Cymru](https://www.team-cymru.org/)'s DNS-based ASN service. Provider outages return a `502` error in the standard response envelope, while timeouts return `504`.
+
+## Proxy IP behavior
+
+`my-ip` only trusts visitor IP headers when `TRUST_PROXY_HEADERS=true`, or when `TRUSTED_PROXY_PLATFORM` is set to `vercel`, `netlify`, or `cloudflare`. In trusted mode, header precedence is:
+
+1. `cf-connecting-ip`
+2. `x-real-ip`
+3. the first value in `x-forwarded-for`
+
+When proxy headers are not trusted, `my-ip` returns an unavailable state instead of echoing spoofable headers.
 
 ## Worker-required tools
 
-These slugs exist in the product catalog but return `501` from the shared API until a container or VM worker is attached:
+These slugs exist in the product catalog but return a friendly `501` disabled response from the shared API until `ENABLE_WORKER_TOOLS=true` and `DIAGNOSTICS_WORKER_URL` point to a healthy container or VM worker:
 
 | Slug | Why |
 | --- | --- |
 | `ping` | ICMP ping requires raw socket permissions |
 | `packet-loss` | Packet-loss sampling requires ICMP support |
 | `traceroute` | Traceroute requires traceroute privileges |
+
+When the worker is enabled, the public API remains `POST /api/tools/[slug]`; the Next.js route proxies internally to worker endpoints such as `POST /api/ping`.
 
 ## Authentication
 
