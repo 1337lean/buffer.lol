@@ -10,7 +10,7 @@ buffer.lol is a focused toolbox for checking hosts, domains, headers, certificat
 - IP utilities for public IP detection, network/geolocation estimates, ASN lookups, and browser user-agent signals.
 - Local developer tools for JSON formatting, Base64, hashing, UUIDs, timestamps, URL parsing, JWT decoding, regex testing, and CIDR calculations.
 - A central tool registry that powers landing cards, dynamic tool pages, and API-backed experiences.
-- Mintlify documentation in `docs/` for the hosted docs site.
+- Hosted documentation maintained in the separate `1337lean/docs` repository.
 - Production hardening for same-origin requests, body-size limits, rate limits, private-network target blocking, live request deduplication, concurrency caps, and optional worker-backed ICMP tools.
 
 ## Tool Catalog
@@ -29,7 +29,6 @@ Ping, packet-loss, and traceroute require an optional diagnostics worker because
 - React 18
 - TypeScript
 - Node.js API routes
-- Mintlify docs
 
 ## Getting Started
 
@@ -40,14 +39,6 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-To preview the docs:
-
-```bash
-npm run docs:dev
-```
-
-The docs preview runs from `docs/` on `http://localhost:3333`.
-
 ## Scripts
 
 | Command | Description |
@@ -56,7 +47,6 @@ The docs preview runs from `docs/` on `http://localhost:3333`.
 | `npm run build` | Build the production app. |
 | `npm run lint` | Run ESLint for `app` and `components`. |
 | `npm run typecheck` | Run TypeScript without emitting files. |
-| `npm run docs:dev` | Start the local Mintlify docs preview. |
 
 ## Environment
 
@@ -66,7 +56,7 @@ Copy `.env.example` to `.env.local` when configuring production-like behavior:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `NEXT_PUBLIC_DOCS_URL` | No | Docs URL used by the app. Leave empty locally or set to `https://docs.buffer.lol` when the docs subdomain is live. |
+| `NEXT_PUBLIC_DOCS_URL` | No | Docs URL used by the app. Leave empty locally or set to `https://docs.buffer.lol` in production. |
 | `UPSTASH_REDIS_REST_URL` | No | Enables shared Redis-backed API rate limiting when paired with the token. |
 | `UPSTASH_REDIS_REST_TOKEN` | No | Upstash REST token for shared rate limiting. |
 | `TRUST_PROXY_HEADERS` | No | Set to `true` only when the deployment platform provides trusted forwarding headers. |
@@ -121,7 +111,6 @@ The route accepts same-origin POST requests, rejects oversized bodies, rate limi
 app/                  Next.js routes, metadata, legal pages, and API handlers
 components/           Landing page and reusable tool UI components
 data/tools.ts         Tool registry used by cards, pages, and API-backed flows
-docs/                 Mintlify documentation project
 public/assets/        Public static assets
 assets/               README and project media
 ```

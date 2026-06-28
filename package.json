@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "docs:dev": "cd docs && npx mint dev --no-open --port 3333",
     "build": "next build",
     "lint": "eslint app components --max-warnings=0",
     "typecheck": "tsc --noEmit",
