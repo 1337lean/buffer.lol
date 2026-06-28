@@ -25,7 +25,7 @@ Server-side diagnostics reject private, local, reserved, and multicast addresses
 
 The committed app displays results in the current browser session. API responses include a `requestId` for troubleshooting, but diagnostic payloads are not designed as file storage or a long-term result archive.
 
-Rate limiting uses a hashed client-and-target key. In production, proxy IP headers are ignored unless the deployment explicitly trusts its platform or reverse proxy; when enabled, `cf-connecting-ip` wins over `x-real-ip`, which wins over `x-forwarded-for`.
+Rate limiting uses a hashed client-and-target key. If Upstash Redis is configured, the limit is shared across app instances; otherwise, it is enforced in memory per instance. In production, proxy IP headers are ignored unless the deployment explicitly trusts its platform or reverse proxy; when enabled, `cf-connecting-ip` wins over `x-real-ip`, which wins over `x-forwarded-for`.
 
 ## What not to infer
 

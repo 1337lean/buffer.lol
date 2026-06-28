@@ -93,13 +93,17 @@ curl -s https://buffer.lol/api/tools/dns-lookup \
 | Input length | Inputs longer than 2,048 characters are rejected |
 | URLs | Only HTTP and HTTPS URLs are supported |
 | Credentials | URLs with embedded credentials are rejected |
+| Default scheme | URL tools assume `https://` when no scheme is provided |
 | Address safety | Private, local, reserved, and multicast IP addresses are rejected for outbound checks |
 | Fetch timeout | HTTP and RDAP provider requests time out after 8 seconds |
 | TCP timeout | Port and TLS checks time out after 7 seconds |
 | Body size | Request bodies over 4 KiB are rejected |
 | Cross-origin requests | Browser requests with a foreign `Origin` header are rejected |
-| Rate limiting | Requests are limited by client identity, tool slug, and target |
+| Rate limiting | Requests are limited to 30 per minute by client identity, tool slug, and target |
+| Concurrency | Live diagnostics are capped per app instance by `DIAGNOSTICS_MAX_CONCURRENCY`, defaulting to 20 |
 | Short cache | DNS responses cache for 60 seconds; RDAP caches for 1 hour; ASN responses cache for 30 minutes |
+
+Rate-limited responses return `429` with `Retry-After`. Responses that reach rate-limit evaluation include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers. When `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are configured, rate limits coordinate through Upstash; otherwise, they use an in-memory per-instance fallback.
 
 ## Providers and attribution
 
@@ -107,7 +111,7 @@ RDAP-backed responses use [rdap.org](https://rdap.org/) for domain and IP regist
 
 ## Proxy IP behavior
 
-`my-ip` only trusts visitor IP headers when `TRUST_PROXY_HEADERS=true`, or when `TRUSTED_PROXY_PLATFORM` is set to `vercel` or `cloudflare`. In trusted mode, header precedence is:
+`my-ip` only trusts visitor IP headers when `TRUST_PROXY_HEADERS=true`, when `TRUSTED_PROXY_PLATFORM` is set to `vercel` or `cloudflare`, or when the runtime exposes `VERCEL=1` or `CF_PAGES=1`. In trusted mode, header precedence is:
 
 1. `cf-connecting-ip`
 2. `x-real-ip`
@@ -125,8 +129,8 @@ These slugs exist in the product catalog but return a friendly `501` disabled re
 | `packet-loss` | Packet-loss sampling requires ICMP support |
 | `traceroute` | Traceroute requires traceroute privileges |
 
-When the worker is enabled, the public API remains `POST /api/tools/[slug]`; the Next.js route proxies internally to worker endpoints such as `POST /api/ping`.
+When the worker is enabled, the public API remains `POST /api/tools/[slug]`; the Next.js route proxies internally to worker endpoints such as `POST /api/ping`. If `DIAGNOSTICS_WORKER_TOKEN` is set, the route sends it to the worker as a bearer token.
 
 ## Authentication
 
-No authentication is required.
+No authentication is required for the public same-origin API.
