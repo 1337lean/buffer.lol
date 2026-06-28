@@ -32,7 +32,6 @@ Ping, packet-loss, and traceroute require an optional diagnostics worker because
 - TypeScript
 - Node.js API routes
 - Mintlify docs
-- Netlify deployment configuration
 
 ## Getting Started
 
@@ -73,7 +72,7 @@ Copy `.env.example` to `.env.local` when configuring production-like behavior:
 | `UPSTASH_REDIS_REST_URL` | No | Enables shared Redis-backed API rate limiting when paired with the token. |
 | `UPSTASH_REDIS_REST_TOKEN` | No | Upstash REST token for shared rate limiting. |
 | `TRUST_PROXY_HEADERS` | No | Set to `true` only when the deployment platform provides trusted forwarding headers. |
-| `TRUSTED_PROXY_PLATFORM` | No | Alternative proxy preset: `vercel`, `netlify`, or `cloudflare`. |
+| `TRUSTED_PROXY_PLATFORM` | No | Alternative proxy preset: `vercel` or `cloudflare`. |
 | `ENABLE_WORKER_TOOLS` | No | Enables worker-backed ping, packet-loss, and traceroute tools. |
 | `DIAGNOSTICS_WORKER_URL` | No | Base URL for the diagnostics worker. Required when worker tools are enabled. |
 | `DIAGNOSTICS_WORKER_TOKEN` | No | Optional bearer token sent to the diagnostics worker. |
@@ -131,7 +130,7 @@ assets/               README and project media
 
 ## Deployment
 
-The repository includes `netlify.toml` with the production build command, publish directory, cache headers, and baseline security headers. The app can also run on any platform that supports Next.js App Router with the Node.js runtime for API routes.
+The app can run on any platform that supports Next.js App Router with the Node.js runtime for API routes. This repository currently includes a GitHub Actions workflow for deploying the Dockerized app to a VPS.
 
 Before publishing, run:
 

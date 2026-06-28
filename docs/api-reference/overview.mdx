@@ -107,7 +107,7 @@ RDAP-backed responses use [rdap.org](https://rdap.org/) for domain and IP regist
 
 ## Proxy IP behavior
 
-`my-ip` only trusts visitor IP headers when `TRUST_PROXY_HEADERS=true`, or when `TRUSTED_PROXY_PLATFORM` is set to `vercel`, `netlify`, or `cloudflare`. In trusted mode, header precedence is:
+`my-ip` only trusts visitor IP headers when `TRUST_PROXY_HEADERS=true`, or when `TRUSTED_PROXY_PLATFORM` is set to `vercel` or `cloudflare`. In trusted mode, header precedence is:
 
 1. `cf-connecting-ip`
 2. `x-real-ip`

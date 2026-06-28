@@ -45,10 +45,8 @@ export function trustProxyHeaders() {
   const platform = process.env.TRUSTED_PROXY_PLATFORM?.toLowerCase();
   return (
     platform === "vercel" ||
-    platform === "netlify" ||
     platform === "cloudflare" ||
     process.env.VERCEL === "1" ||
-    process.env.NETLIFY === "true" ||
     process.env.CF_PAGES === "1"
   );
 }
