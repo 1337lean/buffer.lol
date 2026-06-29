@@ -14,7 +14,7 @@ buffer.lol is a focused toolbox for checking hosts, domains, headers, certificat
 - Local developer tools for JSON formatting, Base64, hashing, UUIDs, timestamps, URL parsing, JWT decoding, regex testing, and CIDR calculations.
 - A central tool registry that powers landing cards, dynamic tool pages, and API-backed experiences.
 - Hosted documentation maintained in the separate `1337lean/docs` repository.
-- Production hardening for same-origin requests, body-size limits, rate limits, private-network target blocking, live request deduplication, concurrency caps, and optional worker-backed ICMP tools.
+- Production hardening for same-origin requests, body-size limits, rate limits, private-network target blocking, live request deduplication, concurrency caps, and worker-backed ICMP tools.
 
 ## Tool Catalog
 
@@ -24,7 +24,7 @@ buffer.lol is a focused toolbox for checking hosts, domains, headers, certificat
 | IP | What's my IP, IP geolocation, ASN/ISP lookup, user-agent parser |
 | Developer | JSON formatter, Base64 encoder/decoder, hash generator, UUID generator, timestamp converter, URL parser/encoder, JWT decoder, regex tester |
 
-Ping, packet-loss, and traceroute require an optional diagnostics worker because ICMP and route tracing are not reliable in typical serverless runtimes. The public API shape stays the same when the worker is enabled.
+Ping, packet-loss, and traceroute use the included diagnostics worker because ICMP and route tracing are not reliable in typical serverless runtimes. The public API shape stays the same whether a request is handled directly by the app or forwarded to the worker.
 
 ## Tech Stack
 
@@ -68,6 +68,26 @@ Copy `.env.example` to `.env.local` when configuring production-like behavior:
 | `DIAGNOSTICS_WORKER_URL` | No | Base URL for the diagnostics worker. Required when worker tools are enabled. |
 | `DIAGNOSTICS_WORKER_TOKEN` | No | Optional bearer token sent to the diagnostics worker. |
 | `DIAGNOSTICS_MAX_CONCURRENCY` | No | Per-instance cap for live diagnostics work. Defaults to the app fallback when unset. |
+
+## Diagnostics Worker
+
+The `diagnostics-worker/` service powers:
+
+- Ping tester
+- Packet loss tester
+- Traceroute visualizer
+
+It exposes `POST /api/ping`, `POST /api/packet-loss`, and `POST /api/traceroute`, validates public targets, runs Linux `ping`/`traceroute` with strict timeouts, and returns JSON to the main app.
+
+To run it in Docker Compose, add the worker service from `docker-compose.worker.example.yml` to the compose file on the VPS, then set the main app environment:
+
+```env
+ENABLE_WORKER_TOOLS=true
+DIAGNOSTICS_WORKER_URL=http://diagnostics-worker:8080
+DIAGNOSTICS_WORKER_TOKEN=use-a-long-random-secret
+```
+
+The worker container needs `NET_RAW` so `ping` can open ICMP sockets. See `diagnostics-worker/README.md` for the full compose snippet.
 
 ## API
 

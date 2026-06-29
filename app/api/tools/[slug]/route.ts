@@ -81,11 +81,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
 
-    const data = workerOnlyTools[slug]
-      ? await runWorkerTool(slug, input, requestId)
-      : await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, () =>
-        withConcurrencyLimit(() => runTool(slug, input, request))
-      );
+    const data = await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, () =>
+      withConcurrencyLimit(() => workerOnlyTools[slug]
+        ? runWorkerTool(slug, input, requestId)
+        : runTool(slug, input, request))
+    );
 
     return envelope({ data, started, requestId, headers: responseHeaders });
   } catch (error) {

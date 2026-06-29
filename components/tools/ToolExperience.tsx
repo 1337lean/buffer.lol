@@ -552,12 +552,100 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
         {result.kind === "success" && (
           <div className="stacked-output">
             <p className="result-note">Completed in {result.durationMs}ms{result.requestId ? ` · ${result.requestId}` : ""}</p>
-            <pre className="wrap-output compact-pre">{JSON.stringify(result.data, null, 2)}</pre>
+            {renderBackendData(tool.slug, result.data)}
           </div>
         )}
       </ResultPanel>
     </>
   );
+}
+
+function renderBackendData(slug: string, data: unknown) {
+  const record = isRecord(data) ? data : null;
+
+  if ((slug === "ping" || slug === "packet-loss") && record) {
+    return <PingResult data={record} showSamples={slug === "packet-loss"} />;
+  }
+
+  if (slug === "traceroute" && record) {
+    return <TracerouteResult data={record} />;
+  }
+
+  return <pre className="wrap-output compact-pre">{JSON.stringify(data, null, 2)}</pre>;
+}
+
+function PingResult({ data, showSamples }: { data: Record<string, unknown>; showSamples: boolean }) {
+  const replies = Array.isArray(data.replies) ? data.replies.filter(isRecord) : [];
+  const transmitted = formatUnknown(data.transmitted);
+  const received = formatUnknown(data.received);
+  const packetLoss = typeof data.packetLossPercent === "number" ? `${data.packetLossPercent}%` : formatUnknown(data.packetLossPercent);
+  const rtt = [data.minMs, data.avgMs, data.maxMs]
+    .map((value) => typeof value === "number" ? `${value}ms` : null)
+    .filter(Boolean)
+    .join(" / ");
+
+  return (
+    <>
+      <dl className="result-list">
+        <div><dt>Target</dt><dd>{formatUnknown(data.target)}</dd></div>
+        <div><dt>Resolved address</dt><dd>{formatUnknown(data.resolvedAddress)}</dd></div>
+        {showSamples && <div><dt>Samples</dt><dd>{formatUnknown(data.samples)}</dd></div>}
+        <div><dt>Packets</dt><dd>{transmitted} transmitted · {received} received</dd></div>
+        <div><dt>Packet loss</dt><dd>{packetLoss}</dd></div>
+        <div><dt>RTT min / avg / max</dt><dd>{rtt || "No round-trip timing returned"}</dd></div>
+      </dl>
+      {replies.length > 0 && (
+        <ol className="inline-result-list diagnostic-replies">
+          {replies.map((reply, index) => (
+            <li key={`${formatUnknown(reply.sequence)}-${index}`}>
+              <strong>seq {formatUnknown(reply.sequence)}</strong>
+              <span>{formatUnknown(reply.timeMs)}ms</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {typeof data.raw === "string" && <RawOutput value={data.raw} />}
+    </>
+  );
+}
+
+function TracerouteResult({ data }: { data: Record<string, unknown> }) {
+  const hops = Array.isArray(data.hops) ? data.hops.filter(isRecord) : [];
+
+  return (
+    <>
+      <dl className="result-list">
+        <div><dt>Target</dt><dd>{formatUnknown(data.target)}</dd></div>
+        <div><dt>Resolved address</dt><dd>{formatUnknown(data.resolvedAddress)}</dd></div>
+        <div><dt>Reached target</dt><dd>{data.reached === true ? "Yes" : data.reached === false ? "No" : "Unknown"}</dd></div>
+      </dl>
+      <ol className="trace-list">
+        {hops.map((hop, index) => (
+          <li key={`${formatUnknown(hop.hop)}-${index}`} className={hop.timeout ? "is-timeout" : ""}>
+            <span>{formatUnknown(hop.hop).padStart(2, "0")}</span>
+            <strong>{hop.timeout ? "Timed out" : formatUnknown(hop.address)}</strong>
+            <em>{typeof hop.rttMs === "number" ? `${hop.rttMs}ms` : "*"}</em>
+          </li>
+        ))}
+      </ol>
+      {typeof data.raw === "string" && <RawOutput value={data.raw} />}
+    </>
+  );
+}
+
+function RawOutput({ value }: { value: string }) {
+  return (
+    <details className="raw-output">
+      <summary>Raw command output</summary>
+      <pre className="wrap-output compact-pre">{value}</pre>
+    </details>
+  );
+}
+
+function formatUnknown(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return "Unknown";
 }
 
 function toUrlResult(url: URL, assumedProtocol: boolean): UrlResult {

@@ -39,7 +39,7 @@ export const tools: Tool[] = [
     description: "Check whether a host responds and inspect round-trip latency.",
     category: "networking",
     command: "ping",
-    status: "backend",
+    status: "available",
     inputLabel: "Hostname or IP",
     inputPlaceholder: "example.com"
   },
@@ -49,7 +49,7 @@ export const tools: Tool[] = [
     description: "Sample connection stability and identify dropped packets.",
     category: "networking",
     command: "loss",
-    status: "backend",
+    status: "available",
     inputLabel: "Hostname or IP",
     inputPlaceholder: "1.1.1.1"
   },
@@ -59,7 +59,7 @@ export const tools: Tool[] = [
     description: "Follow the hops between this service and a destination.",
     category: "networking",
     command: "trace",
-    status: "backend",
+    status: "available",
     inputLabel: "Destination",
     inputPlaceholder: "example.com"
   },

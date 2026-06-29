@@ -1,0 +1,23 @@
+services:
+  app:
+    environment:
+      ENABLE_WORKER_TOOLS: "true"
+      DIAGNOSTICS_WORKER_URL: "http://diagnostics-worker:8080"
+      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN}"
+    depends_on:
+      diagnostics-worker:
+        condition: service_healthy
+
+  diagnostics-worker:
+    build:
+      context: ./diagnostics-worker
+    cap_add:
+      - NET_RAW
+    environment:
+      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
