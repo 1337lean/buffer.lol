@@ -2,6 +2,9 @@
 
 Fast, simple browser-based tools for network diagnostics, web checks, and everyday developer utilities.
 
+- Live site: <https://buffer.lol>
+- Repository: <https://github.com/1337lean/buffer.lol>
+
 buffer.lol is a focused toolbox for checking hosts, domains, headers, certificates, IP metadata, and common data formats without accounts, dashboards, or clutter. Browser-safe utilities run locally in the user's tab; live network diagnostics go through a same-origin Next.js API with rate limiting, request deduplication, SSRF protections, and short-lived caching where it is safe.
 
 ## What It Includes

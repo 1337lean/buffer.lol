@@ -42,6 +42,20 @@ export default function HomePage() {
           <p>From quick network checks to everyday data transforms. Browser-ready tools run locally; network probes are clearly marked while their secure backend is being built.</p>
         </section>
 
+        <nav className="mobile-tool-nav" aria-label="Tool categories">
+          {categories.map((category) => {
+            const meta = categoryMeta[category];
+            const tools = getToolsByCategory(category);
+
+            return (
+              <Link href={`#${category}`} key={category}>
+                <span>{meta.title.replace(" tools", "")}</span>
+                <strong>{tools.length}</strong>
+              </Link>
+            );
+          })}
+        </nav>
+
         {categories.map((category, index) => {
           const meta = categoryMeta[category];
           return (

@@ -32,7 +32,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="footer-brand"><Link className="brand" href="/"><span className="brand-prompt">&gt;_</span>buffer<span>.lol</span></Link><p>Fast, simple networking tools.</p></div>
       <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link>{docsUrl && <a href={docsUrl}>Docs</a>}</div>
-      <div className="footer-links"><a href="https://github.com/roger/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
+      <div className="footer-links"><a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
       <div className="footer-bottom"><span>© 2026 buffer.lol</span><span className="system-status"><i /> All systems nominal</span><span>Built for the curious.</span></div>
     </footer>
   );
