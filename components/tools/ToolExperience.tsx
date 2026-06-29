@@ -6,6 +6,8 @@ import { ResultPanel } from "./ResultPanel";
 
 export function ToolExperience({ tool }: { tool: Tool }) {
   switch (tool.slug) {
+    case "ping": return <BrowserLatencyTool mode="ping" />;
+    case "packet-loss": return <BrowserLatencyTool mode="stability" />;
     case "json-formatter": return <JsonFormatter />;
     case "base64": return <Base64Tool />;
     case "hash-generator": return <HashGenerator />;
@@ -439,11 +441,119 @@ type BackendEnvelope = {
   requestId?: string;
 };
 
+type BrowserLatencySample = {
+  sequence: number;
+  ok: boolean;
+  durationMs: number | null;
+  error?: string;
+};
+
+type BrowserLatencyResult =
+  | { kind: "idle"; message: string }
+  | { kind: "pending"; samples: BrowserLatencySample[]; total: number }
+  | { kind: "success"; samples: BrowserLatencySample[]; summary: BrowserLatencySummary }
+  | { kind: "error"; message: string };
+
+type BrowserLatencySummary = {
+  sent: number;
+  received: number;
+  failed: number;
+  lossPercent: number;
+  minMs: number | null;
+  avgMs: number | null;
+  maxMs: number | null;
+  jitterMs: number | null;
+};
+
 type BackendResult =
   | { kind: "idle"; message: string }
   | { kind: "pending" }
   | { kind: "error"; message: string; requestId?: string; durationMs?: number }
   | { kind: "success"; data: unknown; requestId?: string; durationMs?: number };
+
+function BrowserLatencyTool({ mode }: { mode: "ping" | "stability" }) {
+  const sampleCount = mode === "ping" ? 6 : 20;
+  const title = mode === "ping" ? "browser-ping.output" : "connection-stability.output";
+  const [result, setResult] = useState<BrowserLatencyResult>({
+    kind: "idle",
+    message: mode === "ping" ? "Ready to measure latency to buffer.lol." : "Ready to sample connection stability to buffer.lol."
+  });
+  const status = result.kind === "success" ? "success" : result.kind === "error" ? "error" : result.kind === "pending" ? "pending" : "idle";
+
+  async function runTest() {
+    setResult({ kind: "pending", samples: [], total: sampleCount });
+
+    try {
+      const samples: BrowserLatencySample[] = [];
+
+      for (let index = 0; index < sampleCount; index += 1) {
+        const sample = await measureBrowserLatency(index + 1, mode === "ping" ? "ping" : "packet-loss");
+        samples.push(sample);
+        setResult({ kind: "pending", samples: [...samples], total: sampleCount });
+        if (index < sampleCount - 1) await wait(160);
+      }
+
+      setResult({ kind: "success", samples, summary: summarizeLatencySamples(samples) });
+    } catch (error) {
+      setResult({ kind: "error", message: error instanceof Error ? error.message : "The latency test failed." });
+    }
+  }
+
+  return (
+    <>
+      <section className="tool-controls info-card">
+        <span className="command-icon large">{mode === "ping" ? "ms" : "%"}</span>
+        <h2>{mode === "ping" ? "Browser latency" : "Connection stability"}</h2>
+        <p>{mode === "ping" ? "Measures HTTPS round-trip time from this browser to buffer.lol." : "Sends repeated HTTPS samples from this browser to buffer.lol and counts failed requests."}</p>
+        <div className="button-row"><button className="primary-button" onClick={runTest} disabled={result.kind === "pending"} type="button">{result.kind === "pending" ? "Testing..." : mode === "ping" ? "Test latency" : "Test stability"} <span>→</span></button></div>
+        <p className="privacy-note"><span>●</span> This test targets buffer.lol only.</p>
+      </section>
+      <ResultPanel title={title} status={status}>
+        {result.kind === "idle" && <p className="terminal-empty"><span className="prompt">$</span> {result.message}<span className="cursor" /></p>}
+        {result.kind === "pending" && <BrowserLatencyProgress result={result} />}
+        {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
+        {result.kind === "success" && <BrowserLatencyOutput result={result} />}
+      </ResultPanel>
+    </>
+  );
+}
+
+function BrowserLatencyProgress({ result }: { result: Extract<BrowserLatencyResult, { kind: "pending" }> }) {
+  return (
+    <div className="stacked-output">
+      <p className="result-note">{result.samples.length} of {result.total} samples complete.</p>
+      <div className="loading-lines" aria-label="Loading"><span /><span /><span /></div>
+    </div>
+  );
+}
+
+function BrowserLatencyOutput({ result }: { result: Extract<BrowserLatencyResult, { kind: "success" }> }) {
+  const { summary } = result;
+  const rtt = [summary.minMs, summary.avgMs, summary.maxMs]
+    .map((value) => value === null ? null : `${value}ms`)
+    .filter(Boolean)
+    .join(" / ");
+
+  return (
+    <div className="stacked-output">
+      <dl className="result-list">
+        <div><dt>Target</dt><dd>buffer.lol</dd></div>
+        <div><dt>Samples</dt><dd>{summary.sent} sent · {summary.received} completed · {summary.failed} failed</dd></div>
+        <div><dt>Failed requests</dt><dd>{summary.lossPercent}%</dd></div>
+        <div><dt>Latency min / avg / max</dt><dd>{rtt || "No successful samples"}</dd></div>
+        <div><dt>Jitter</dt><dd>{summary.jitterMs === null ? "Not enough samples" : `${summary.jitterMs}ms`}</dd></div>
+      </dl>
+      <ol className="inline-result-list diagnostic-replies">
+        {result.samples.map((sample) => (
+          <li key={sample.sequence}>
+            <strong>sample {sample.sequence}</strong>
+            <span>{sample.ok && sample.durationMs !== null ? `${sample.durationMs}ms` : sample.error || "failed"}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 function CidrCalculator() {
   const [input, setInput] = useState("192.168.1.0/24");
@@ -480,6 +590,67 @@ function CidrCalculator() {
       </ResultPanel>
     </>
   );
+}
+
+async function measureBrowserLatency(sequence: number, slug: "ping" | "packet-loss"): Promise<BrowserLatencySample> {
+  const started = performance.now();
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 3_000);
+
+  try {
+    const response = await fetch(`/api/tools/${slug}?sample=${sequence}&t=${Date.now()}`, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+    const durationMs = roundTripMs(performance.now() - started);
+
+    if (!response.ok) {
+      return { sequence, ok: false, durationMs, error: `HTTP ${response.status}` };
+    }
+
+    await response.json().catch(() => null);
+    return { sequence, ok: true, durationMs };
+  } catch (error) {
+    return {
+      sequence,
+      ok: false,
+      durationMs: null,
+      error: error instanceof DOMException && error.name === "AbortError" ? "timeout" : "failed"
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function summarizeLatencySamples(samples: BrowserLatencySample[]): BrowserLatencySummary {
+  const successful = samples
+    .filter((sample) => sample.ok && typeof sample.durationMs === "number")
+    .map((sample) => sample.durationMs as number);
+  const failed = samples.length - successful.length;
+  const jitterValues = successful.slice(1).map((value, index) => Math.abs(value - successful[index]));
+
+  return {
+    sent: samples.length,
+    received: successful.length,
+    failed,
+    lossPercent: roundPercent((failed / samples.length) * 100),
+    minMs: successful.length ? roundTripMs(Math.min(...successful)) : null,
+    avgMs: successful.length ? roundTripMs(successful.reduce((total, value) => total + value, 0) / successful.length) : null,
+    maxMs: successful.length ? roundTripMs(Math.max(...successful)) : null,
+    jitterMs: jitterValues.length ? roundTripMs(jitterValues.reduce((total, value) => total + value, 0) / jitterValues.length) : null
+  };
+}
+
+function roundTripMs(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function roundPercent(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function BackendPlaceholder({ tool }: { tool: Tool }) {

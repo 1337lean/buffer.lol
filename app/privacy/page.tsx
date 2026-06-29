@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           <p>We use submitted data to provide requested tools, respond to messages, prevent abuse, and improve reliability. We do not sell contact emails.</p>
 
           <h2>Tool Data</h2>
-          <p>JSON, Base64, hashing, UUID, timestamp, URL parsing, JWT decoding, regex testing, CIDR calculations, and user-agent utilities run locally in your browser. Server-backed DNS, HTTP, TLS, uptime, port, RDAP, redirect, robots/sitemap, public IP, geolocation, ASN, ping, packet-loss, and traceroute tools send the target to buffer.lol only to produce the requested result. ICMP and traceroute checks are handled by a restricted diagnostics worker.</p>
+          <p>JSON, Base64, hashing, UUID, timestamp, URL parsing, JWT decoding, regex testing, CIDR calculations, and user-agent utilities run locally in your browser. Ping and packet-loss/stability tests send repeated HTTPS requests from your browser to buffer.lol. Server-backed DNS, HTTP, TLS, uptime, port, RDAP, redirect, robots/sitemap, public IP, geolocation, ASN, and traceroute tools send the target to buffer.lol only to produce the requested result. Traceroute checks are handled by a restricted diagnostics worker.</p>
 
           <h2>Removal Requests</h2>
           <p>To ask for contact data removal, email <a href="mailto:hello@buffer.lol">hello@buffer.lol</a> from the address you used.</p>

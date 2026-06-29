@@ -39,10 +39,10 @@ const implementedTools = new Set([
 ]);
 
 const workerOnlyTools: Record<string, string> = {
-  ping: "ICMP ping requires a container or VM worker with raw socket permissions.",
-  "packet-loss": "Packet-loss sampling requires a container or VM worker with ICMP support.",
   traceroute: "Traceroute requires a container or VM worker with traceroute privileges."
 };
+
+const clientLatencyTools = new Set(["ping", "packet-loss"]);
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -96,6 +96,55 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
+export async function GET(request: NextRequest, context: RouteContext) {
+  const started = Date.now();
+  const requestId = crypto.randomUUID();
+  const { slug } = await context.params;
+  let responseHeaders: Record<string, string> = {};
+
+  try {
+    if (!clientLatencyTools.has(slug)) {
+      throw new ApiError("Unknown tool endpoint.", 404);
+    }
+
+    enforceSameOrigin(request);
+
+    const rateLimit = await checkRateLimit(request, {
+      keyPrefix: `tools:${slug}:client`,
+      limit: 1_000,
+      windowMs: 60_000,
+      targetKey: "latency"
+    });
+    responseHeaders = rateLimit.headers;
+
+    if (!rateLimit.allowed) {
+      return envelope({
+        error: "Too many requests. Please slow down and try again shortly.",
+        started,
+        requestId,
+        status: 429,
+        headers: responseHeaders
+      });
+    }
+
+    return envelope({
+      data: {
+        ok: true,
+        tool: slug,
+        serverTime: new Date().toISOString()
+      },
+      started,
+      requestId,
+      headers: responseHeaders
+    });
+  } catch (error) {
+    const status = error instanceof ApiError ? error.status : 500;
+    const message = error instanceof Error ? error.message : "Unexpected backend error.";
+
+    return envelope({ error: message, started, requestId, status, headers: responseHeaders });
+  }
+}
+
 export async function OPTIONS(request: NextRequest) {
   try {
     enforceSameOrigin(request);
@@ -106,8 +155,8 @@ export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      Allow: "POST, OPTIONS",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      Allow: "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Access-Control-Max-Age": "600",
       Vary: "Origin"

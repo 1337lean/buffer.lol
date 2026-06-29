@@ -9,12 +9,12 @@ buffer.lol is a focused toolbox for checking hosts, domains, headers, certificat
 
 ## What It Includes
 
-- Network checks for DNS records, HTTP headers, TLS certificates, uptime, TCP ports, redirects, robots.txt, sitemaps, and RDAP-backed WHOIS data.
+- Network checks for browser-to-buffer.lol latency, connection stability, DNS records, HTTP headers, TLS certificates, uptime, TCP ports, redirects, robots.txt, sitemaps, and RDAP-backed WHOIS data.
 - IP utilities for public IP detection, network/geolocation estimates, ASN lookups, and browser user-agent signals.
 - Local developer tools for JSON formatting, Base64, hashing, UUIDs, timestamps, URL parsing, JWT decoding, regex testing, and CIDR calculations.
 - A central tool registry that powers landing cards, dynamic tool pages, and API-backed experiences.
 - Hosted documentation maintained in the separate `1337lean/docs` repository.
-- Production hardening for same-origin requests, body-size limits, rate limits, private-network target blocking, live request deduplication, concurrency caps, and worker-backed ICMP tools.
+- Production hardening for same-origin requests, body-size limits, rate limits, private-network target blocking, live request deduplication, concurrency caps, and worker-backed traceroute.
 
 ## Tool Catalog
 
@@ -24,7 +24,7 @@ buffer.lol is a focused toolbox for checking hosts, domains, headers, certificat
 | IP | What's my IP, IP geolocation, ASN/ISP lookup, user-agent parser |
 | Developer | JSON formatter, Base64 encoder/decoder, hash generator, UUID generator, timestamp converter, URL parser/encoder, JWT decoder, regex tester |
 
-Ping, packet-loss, and traceroute use the included diagnostics worker because ICMP and route tracing are not reliable in typical serverless runtimes. The public API shape stays the same whether a request is handled directly by the app or forwarded to the worker.
+Ping and packet-loss/stability tests run from the visitor's browser to buffer.lol using repeated HTTPS samples. Traceroute uses the included diagnostics worker because route tracing is not available in browsers or typical serverless runtimes.
 
 ## Tech Stack
 
@@ -64,20 +64,16 @@ Copy `.env.example` to `.env.local` when configuring production-like behavior:
 | `UPSTASH_REDIS_REST_TOKEN` | No | Upstash REST token for shared rate limiting. |
 | `TRUST_PROXY_HEADERS` | No | Set to `true` only when the deployment platform provides trusted forwarding headers. |
 | `TRUSTED_PROXY_PLATFORM` | No | Alternative proxy preset: `vercel` or `cloudflare`. |
-| `ENABLE_WORKER_TOOLS` | No | Enables worker-backed ping, packet-loss, and traceroute tools. |
+| `ENABLE_WORKER_TOOLS` | No | Enables the worker-backed traceroute tool. |
 | `DIAGNOSTICS_WORKER_URL` | No | Base URL for the diagnostics worker. Required when worker tools are enabled. |
 | `DIAGNOSTICS_WORKER_TOKEN` | No | Optional bearer token sent to the diagnostics worker. |
 | `DIAGNOSTICS_MAX_CONCURRENCY` | No | Per-instance cap for live diagnostics work. Defaults to the app fallback when unset. |
 
 ## Diagnostics Worker
 
-The `diagnostics-worker/` service powers:
+The `diagnostics-worker/` service powers the traceroute visualizer. Ping and packet-loss/stability tests run in the browser against buffer.lol.
 
-- Ping tester
-- Packet loss tester
-- Traceroute visualizer
-
-It exposes `POST /api/ping`, `POST /api/packet-loss`, and `POST /api/traceroute`, validates public targets, runs Linux `ping`/`traceroute` with strict timeouts, and returns JSON to the main app.
+It exposes `POST /api/traceroute`, validates public targets, runs Linux `traceroute` with strict timeouts, and returns JSON to the main app. The worker also keeps server-side ping endpoints available for future/internal use, but the public ping and packet-loss pages do not use them.
 
 To run it in Docker Compose, add the worker service from `docker-compose.worker.example.yml` to the compose file on the VPS, then set the main app environment:
 
@@ -87,7 +83,7 @@ DIAGNOSTICS_WORKER_URL=http://diagnostics-worker:8080
 DIAGNOSTICS_WORKER_TOKEN=use-a-long-random-secret
 ```
 
-The worker container needs `NET_RAW` so `ping` can open ICMP sockets. See `diagnostics-worker/README.md` for the full compose snippet.
+The worker container needs `NET_RAW` for low-level network diagnostics. See `diagnostics-worker/README.md` for the full compose snippet.
 
 ## API
 
@@ -153,7 +149,7 @@ npm run build
 ## Privacy And Safety
 
 - Browser utilities process data locally whenever possible.
-- Network diagnostics are explicit server-backed requests to public targets.
+- Browser latency and stability diagnostics send repeated HTTPS requests to buffer.lol. Traceroute and other network diagnostics are explicit server-backed requests to public targets.
 - The API blocks private and reserved outbound network targets to reduce SSRF risk.
 - Rate limiting and request deduplication protect the service from accidental bursts.
 - Proxy IP headers are ignored unless explicitly trusted through environment configuration.

@@ -36,27 +36,23 @@ export const tools: Tool[] = [
   {
     slug: "ping",
     name: "Ping Tester",
-    description: "Check whether a host responds and inspect round-trip latency.",
+    description: "Measure this browser's latency to buffer.lol.",
     category: "networking",
-    command: "ping",
-    status: "available",
-    inputLabel: "Hostname or IP",
-    inputPlaceholder: "example.com"
+    command: "latency",
+    status: "available"
   },
   {
     slug: "packet-loss",
     name: "Packet Loss Tester",
-    description: "Sample connection stability and identify dropped packets.",
+    description: "Sample this browser's connection stability to buffer.lol.",
     category: "networking",
-    command: "loss",
-    status: "available",
-    inputLabel: "Hostname or IP",
-    inputPlaceholder: "1.1.1.1"
+    command: "stability",
+    status: "available"
   },
   {
     slug: "traceroute",
     name: "Traceroute Visualizer",
-    description: "Follow the hops between this service and a destination.",
+    description: "Trace hops from buffer.lol's diagnostics server to a destination.",
     category: "networking",
     command: "trace",
     status: "available",
