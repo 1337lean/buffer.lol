@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { categoryMeta, getToolsByCategory, type ToolCategory } from "@/data/tools";
@@ -22,19 +23,7 @@ export default function HomePage() {
             <div className="hero-trust"><span>◉ No sign-up</span><span>◉ Browser-first</span><span>◉ Zero clutter</span></div>
           </div>
 
-          <div className="hero-terminal" aria-label="buffer.lol terminal preview">
-            <div className="terminal-bar"><span className="terminal-dots"><i /><i /><i /></span><strong>buffer — zsh</strong><span className="terminal-status status-success">ready</span></div>
-            <div className="hero-terminal-body">
-              <p><span className="prompt">➜</span> <i>~</i> buffer ping example.com</p>
-              <p className="muted-line">Resolving host<span className="typing-dots">...</span></p>
-              <p><b>64 bytes</b> from example.com: time=<em>18.4 ms</em></p>
-              <p><b>64 bytes</b> from example.com: time=<em>17.9 ms</em></p>
-              <div className="terminal-rule" />
-              <p><span className="success-mark">✓</span> 2 packets received · <em>0% loss</em></p>
-              <p className="terminal-prompt"><span className="prompt">➜</span> <i>~</i> <span className="cursor" /></p>
-            </div>
-            <div className="terminal-foot"><span><i /> encrypted connection</span><span>v1.0</span></div>
-          </div>
+          <HeroTerminal />
         </section>
 
         <section className="tool-intro" aria-labelledby="toolbox-heading">
