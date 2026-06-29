@@ -151,8 +151,27 @@ function enforceSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (!origin) return;
 
-  const requestOrigin = new URL(request.url).origin;
-  if (origin !== requestOrigin) throw new ApiError("Cross-origin API requests are not allowed.", 403);
+  let originUrl: URL;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    throw new ApiError("Cross-origin API requests are not allowed.", 403);
+  }
+
+  const requestOrigin = new URL(request.url);
+  const allowedHosts = new Set([
+    requestOrigin.host,
+    request.headers.get("host"),
+    firstHeaderValue(request.headers.get("x-forwarded-host"))
+  ].filter(Boolean));
+
+  if (!allowedHosts.has(originUrl.host)) {
+    throw new ApiError("Cross-origin API requests are not allowed.", 403);
+  }
+}
+
+function firstHeaderValue(value: string | null) {
+  return value?.split(",")[0]?.trim() || null;
 }
 
 function enforceBodySize(request: NextRequest) {
