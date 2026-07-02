@@ -4,7 +4,7 @@ import { isIpLiteral, normalizeIpLiteral } from "./ip";
 
 export type ClientIpResult = {
   ip: string | null;
-  source: "cf-connecting-ip" | "x-real-ip" | "x-forwarded-for" | "unavailable";
+  source: "cf-connecting-ip" | "x-real-ip" | "x-forwarded-for" | "forwarded" | "unavailable";
   trustedProxyHeaders: boolean;
 };
 
@@ -16,7 +16,8 @@ export function getClientIp(request: NextRequest): ClientIpResult {
   const candidates: Array<[ClientIpResult["source"], string | null]> = [
     ["cf-connecting-ip", request.headers.get("cf-connecting-ip")],
     ["x-real-ip", request.headers.get("x-real-ip")],
-    ["x-forwarded-for", firstForwardedFor(request.headers.get("x-forwarded-for"))]
+    ["x-forwarded-for", firstForwardedFor(request.headers.get("x-forwarded-for"))],
+    ["forwarded", forwardedFor(request.headers.get("forwarded"))]
   ];
 
   for (const [source, value] of candidates) {
@@ -44,6 +45,7 @@ export function trustProxyHeaders() {
 
   const platform = process.env.TRUSTED_PROXY_PLATFORM?.toLowerCase();
   return (
+    process.env.NODE_ENV === "production" ||
     platform === "vercel" ||
     platform === "cloudflare" ||
     process.env.VERCEL === "1" ||
@@ -53,6 +55,12 @@ export function trustProxyHeaders() {
 
 function firstForwardedFor(value: string | null) {
   return value?.split(",")[0]?.trim() || null;
+}
+
+function forwardedFor(value: string | null) {
+  const firstForwarded = firstForwardedFor(value);
+  const match = firstForwarded?.match(/(?:^|;)\s*for=(?:"?)([^";,]+)(?:"?)/i);
+  return match?.[1]?.trim() || null;
 }
 
 function normalizeHeaderIp(value: string | null) {

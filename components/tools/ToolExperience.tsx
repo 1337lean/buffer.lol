@@ -722,7 +722,7 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
         )}
         {result.kind === "success" && (
           <div className="stacked-output">
-            <p className="result-note">Completed in {result.durationMs}ms{result.requestId ? ` · ${result.requestId}` : ""}</p>
+            {tool.slug !== "my-ip" && <p className="result-note">Completed in {result.durationMs}ms{result.requestId ? ` · ${result.requestId}` : ""}</p>}
             {renderBackendData(tool.slug, result.data)}
           </div>
         )}
@@ -734,6 +734,10 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
 function renderBackendData(slug: string, data: unknown) {
   const record = isRecord(data) ? data : null;
 
+  if (slug === "my-ip" && record && typeof record.ip === "string") {
+    return <MyIpResult ip={record.ip} />;
+  }
+
   if ((slug === "ping" || slug === "packet-loss") && record) {
     return <PingResult data={record} showSamples={slug === "packet-loss"} />;
   }
@@ -743,6 +747,15 @@ function renderBackendData(slug: string, data: unknown) {
   }
 
   return <pre className="wrap-output compact-pre">{JSON.stringify(data, null, 2)}</pre>;
+}
+
+function MyIpResult({ ip }: { ip: string }) {
+  return (
+    <div className="ip-readout">
+      <span>Public IP</span>
+      <strong>{ip}</strong>
+    </div>
+  );
 }
 
 function PingResult({ data, showSamples }: { data: Record<string, unknown>; showSamples: boolean }) {

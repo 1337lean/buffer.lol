@@ -62,7 +62,7 @@ Copy `.env.example` to `.env.local` when configuring production-like behavior:
 | `NEXT_PUBLIC_DOCS_URL` | No | Docs URL used by the app. Leave empty locally or set to `https://docs.buffer.lol` in production. |
 | `UPSTASH_REDIS_REST_URL` | No | Enables shared Redis-backed API rate limiting when paired with the token. |
 | `UPSTASH_REDIS_REST_TOKEN` | No | Upstash REST token for shared rate limiting. |
-| `TRUST_PROXY_HEADERS` | No | Set to `true` only when the deployment platform provides trusted forwarding headers. |
+| `TRUST_PROXY_HEADERS` | No | Proxy IP headers are trusted automatically in production. Set to `false` only if the app is directly exposed without a trusted proxy. |
 | `TRUSTED_PROXY_PLATFORM` | No | Alternative proxy preset: `vercel` or `cloudflare`. |
 | `ENABLE_WORKER_TOOLS` | No | Enables the worker-backed traceroute tool. |
 | `DIAGNOSTICS_WORKER_URL` | No | Base URL for the diagnostics worker. Required when worker tools are enabled. |

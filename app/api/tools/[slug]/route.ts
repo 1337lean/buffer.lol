@@ -23,6 +23,7 @@ const DNS_CACHE_TTL_MS = 60_000;
 const RDAP_CACHE_TTL_MS = 60 * 60_000;
 const ASN_CACHE_TTL_MS = 30 * 60_000;
 const LIVE_DEDUPE_MS = 1_500;
+const requestScopedTools = new Set(["my-ip"]);
 
 const implementedTools = new Set([
   "dns-lookup",
@@ -81,11 +82,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
 
-    const data = await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, () =>
-      withConcurrencyLimit(() => workerOnlyTools[slug]
+    const execute = () => withConcurrencyLimit(() =>
+      workerOnlyTools[slug]
         ? runWorkerTool(slug, input, requestId)
-        : runTool(slug, input, request))
+        : runTool(slug, input, request)
     );
+    const data = requestScopedTools.has(slug)
+      ? await execute()
+      : await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, execute);
 
     return envelope({ data, started, requestId, headers: responseHeaders });
   } catch (error) {
@@ -440,15 +444,16 @@ async function lookupRdap(input: string) {
 function detectClientIp(request: NextRequest) {
   const client = getClientIp(request);
 
-  return {
-    ip: client.ip || "Unavailable in this runtime",
-    source: client.source,
-    trustedProxyHeaders: client.trustedProxyHeaders,
-    headerPrecedence: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
-    note: client.trustedProxyHeaders
-      ? "Production proxy headers are trusted by configuration, and Cloudflare's visitor header wins when present."
-      : "Proxy IP headers are ignored until TRUST_PROXY_HEADERS=true or a trusted platform is configured."
-  };
+  if (!client.ip || !isPublicIp(client.ip)) {
+    throw new ApiError(
+      client.trustedProxyHeaders
+        ? "Your public IP was not available from the trusted proxy headers."
+        : "Public IP detection needs trusted proxy headers. Set TRUST_PROXY_HEADERS=true or TRUSTED_PROXY_PLATFORM=vercel/cloudflare in production.",
+      503
+    );
+  }
+
+  return { ip: client.ip };
 }
 
 async function lookupIpNetwork(input: string) {
