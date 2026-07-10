@@ -9,11 +9,16 @@ const execFileAsync = promisify(execFile);
 
 const PORT = Number(process.env.PORT || 8080);
 const TOKEN = process.env.DIAGNOSTICS_WORKER_TOKEN || "";
+const INCLUDE_RAW_DIAGNOSTICS = process.env.INCLUDE_RAW_DIAGNOSTICS === "true";
 const MAX_BODY_BYTES = 4 * 1024;
 const COMMAND_TIMEOUT_MS = 12_000;
 const PING_COUNT = clampInteger(process.env.PING_COUNT, 1, 10, 4);
 const PACKET_LOSS_COUNT = clampInteger(process.env.PACKET_LOSS_COUNT, 4, 50, 20);
 const TRACEROUTE_MAX_HOPS = clampInteger(process.env.TRACEROUTE_MAX_HOPS, 4, 64, 30);
+
+if (!TOKEN && process.env.NODE_ENV === "production") {
+  throw new Error("DIAGNOSTICS_WORKER_TOKEN is required in production.");
+}
 
 const IPV4_BLOCKED_RANGES = [
   [0x00000000, 0x00ffffff],
@@ -35,7 +40,10 @@ const IPV4_BLOCKED_RANGES = [
 const IPV6_BLOCKED_RANGES = [
   [0n, 128],
   [1n, 128],
+  [ipv6ToBigInt("::"), 96],
+  [ipv6ToBigInt("::ffff:0:0:0"), 96],
   [ipv6ToBigInt("64:ff9b::"), 96],
+  [ipv6ToBigInt("64:ff9b:1::"), 48],
   [ipv6ToBigInt("100::"), 64],
   [ipv6ToBigInt("2001::"), 23],
   [ipv6ToBigInt("2001:2::"), 48],
@@ -150,7 +158,7 @@ async function runTraceroute(input) {
     maxHops: TRACEROUTE_MAX_HOPS,
     reached: parsed.hops.some((hop) => hop.address === target.address),
     hops: parsed.hops,
-    raw: parsed.raw
+    ...(INCLUDE_RAW_DIAGNOSTICS ? { raw: parsed.raw } : {})
   };
 }
 
@@ -222,13 +230,16 @@ function parseTraceroute(output) {
     const rest = hopMatch[2];
     const timeout = rest.includes("*") && !/\d+(?:\.\d+)?\s*ms/.test(rest);
     const addressMatch = rest.match(/((?:\d{1,3}\.){3}\d{1,3}|[a-f0-9:]{2,})/i);
+    const parsedAddress = addressMatch ? addressMatch[1] : null;
+    const internal = Boolean(parsedAddress && !isPublicIp(parsedAddress));
     const timings = Array.from(rest.matchAll(/(\d+(?:\.\d+)?)\s*ms/g), (match) => Number(match[1]));
 
     hops.push({
       hop: Number(hopMatch[1]),
-      address: addressMatch ? addressMatch[1] : null,
+      address: internal ? null : parsedAddress,
       rttMs: timings[0] ?? null,
-      timeout
+      timeout,
+      internal
     });
   }
 

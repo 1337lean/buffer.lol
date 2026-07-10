@@ -1,10 +1,11 @@
 import { promises as dns } from "node:dns";
 import { createHash } from "node:crypto";
-import net from "node:net";
+import net, { type LookupFunction } from "node:net";
 import tls from "node:tls";
 import { domainToASCII } from "node:url";
 import { NextRequest, NextResponse } from "next/server";
-import { getClientIp } from "../../_lib/client-ip";
+import { Agent, type Dispatcher } from "undici";
+import { getClientIp, trustProxyHeaders } from "../../_lib/client-ip";
 import { ConcurrencyLimitError, dedupe, withCache, withConcurrencyLimit } from "../../_lib/request-cache";
 import { checkRateLimit } from "../../_lib/rate-limit";
 import { isPublicIp, normalizeIpLiteral } from "../../_lib/ip";
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     enforceSameOrigin(request);
-    enforceBodySize(request);
+    enforceDeclaredBodySize(request);
 
     const body = await readJsonBody(request);
     const input = typeof body.input === "string" ? body.input : "";
@@ -175,6 +176,7 @@ async function runWorkerTool(slug: string, input: string, requestId: string) {
 
   const workerUrl = process.env.DIAGNOSTICS_WORKER_URL;
   if (!workerUrl) throw new ApiError("Worker-backed tools are enabled, but DIAGNOSTICS_WORKER_URL is not configured.", 503);
+  if (!process.env.DIAGNOSTICS_WORKER_TOKEN) throw new ApiError("Worker-backed tools are enabled, but DIAGNOSTICS_WORKER_TOKEN is not configured.", 503);
 
   const endpoint = new URL(`/api/${slug}`, workerUrl);
   const response = await fetch(endpoint, {
@@ -183,7 +185,7 @@ async function runWorkerTool(slug: string, input: string, requestId: string) {
       "Content-Type": "application/json",
       "User-Agent": USER_AGENT,
       "X-Request-Id": requestId,
-      ...(process.env.DIAGNOSTICS_WORKER_TOKEN ? { Authorization: `Bearer ${process.env.DIAGNOSTICS_WORKER_TOKEN}` } : {})
+      Authorization: `Bearer ${process.env.DIAGNOSTICS_WORKER_TOKEN}`
     },
     body: JSON.stringify({ input }),
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
@@ -215,7 +217,7 @@ function enforceSameOrigin(request: NextRequest) {
   const allowedHosts = new Set([
     requestOrigin.host,
     request.headers.get("host"),
-    firstHeaderValue(request.headers.get("x-forwarded-host"))
+    ...(trustProxyHeaders() ? [firstHeaderValue(request.headers.get("x-forwarded-host"))] : [])
   ].filter(Boolean));
 
   if (!allowedHosts.has(originUrl.host)) {
@@ -227,7 +229,7 @@ function firstHeaderValue(value: string | null) {
   return value?.split(",")[0]?.trim() || null;
 }
 
-function enforceBodySize(request: NextRequest) {
+function enforceDeclaredBodySize(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") || "0");
   if (contentLength > MAX_BODY_BYTES) throw new ApiError("Request body is too large.", 413);
 }
@@ -295,7 +297,6 @@ async function lookupDns(input: string) {
 
 async function inspectHeaders(input: string) {
   const url = normalizeHttpUrl(input);
-  await resolvePublicHost(url.hostname);
 
   const started = Date.now();
   let response = await safeFetch(url, { method: "HEAD" });
@@ -315,7 +316,6 @@ async function inspectHeaders(input: string) {
 
 async function checkUptime(input: string) {
   const url = normalizeHttpUrl(input);
-  await resolvePublicHost(url.hostname);
 
   const started = Date.now();
   let response = await safeFetch(url, { method: "HEAD" });
@@ -338,8 +338,6 @@ async function checkRedirects(input: string) {
   const chain = [];
 
   for (let hop = 0; hop < 8; hop += 1) {
-    await resolvePublicHost(currentUrl.hostname);
-
     const started = Date.now();
     const response = await safeFetch(currentUrl, { method: "HEAD" });
     const location = response.headers.get("location");
@@ -365,7 +363,6 @@ async function checkRedirects(input: string) {
 async function inspectRobotsAndSitemap(input: string) {
   const url = normalizeHttpUrl(input);
   const origin = new URL(url.origin);
-  await resolvePublicHost(origin.hostname);
 
   const robotsUrl = new URL("/robots.txt", origin);
   const sitemapUrl = new URL("/sitemap.xml", origin);
@@ -496,12 +493,34 @@ async function resolveRecord(type: string, resolver: () => Promise<unknown>) {
   }
 }
 
-async function readJsonBody(request: NextRequest) {
+export async function readJsonBody(request: NextRequest) {
+  if (!request.body) return {};
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
   try {
-    const body = await request.json();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      total += value.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new ApiError("Request body is too large.", 413);
+      }
+
+      chunks.push(value);
+    }
+
+    if (!chunks.length) return {};
+    const body = JSON.parse(new TextDecoder().decode(Buffer.concat(chunks)));
     return isRecord(body) ? body : {};
-  } catch {
-    return {};
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("Request body must be valid JSON.", 400);
   }
 }
 
@@ -669,18 +688,47 @@ function requirePublicIp(input: string) {
   return raw;
 }
 
-function safeFetch(url: URL, init: RequestInit) {
-  return fetch(url, {
-    ...init,
-    redirect: "manual",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: {
-      Accept: "*/*",
-      "User-Agent": USER_AGENT,
-      ...(init.headers ?? {})
-    }
-  }).catch((error: unknown) => {
+async function safeFetch(url: URL, init: RequestInit) {
+  const addresses = await resolvePublicHost(url.hostname);
+  const selected = addresses[0];
+  const dispatcher = createPinnedDispatcher(selected);
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      redirect: "manual",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: {
+        Accept: "*/*",
+        "User-Agent": USER_AGENT,
+        ...(init.headers ?? {})
+      },
+      dispatcher
+    } as RequestInit & { dispatcher: Dispatcher });
+
+    if ((init.method || "GET").toUpperCase() === "HEAD") return response;
+
+    const body = await readLimitedText(response, MAX_TEXT_BYTES);
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers
+    });
+  } catch (error) {
     throw fetchErrorToApiError(error);
+  } finally {
+    await dispatcher.close().catch(() => undefined);
+  }
+}
+
+function createPinnedDispatcher(selected: LookupAddress) {
+  return new Agent({
+    connect: {
+      lookup: ((_hostname, options, callback) => {
+        if (options.all) callback(null, [selected]);
+        else callback(null, selected.address, selected.family);
+      }) as LookupFunction
+    }
   });
 }
 

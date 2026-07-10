@@ -20,7 +20,10 @@ const IPV4_BLOCKED_RANGES: Array<[number, number]> = [
 const IPV6_BLOCKED_RANGES: Array<[bigint, number]> = [
   [BigInt(0), 128],
   [BigInt(1), 128],
+  [ipv6ToBigInt("::"), 96],
+  [ipv6ToBigInt("::ffff:0:0:0"), 96],
   [ipv6ToBigInt("64:ff9b::"), 96],
+  [ipv6ToBigInt("64:ff9b:1::"), 48],
   [ipv6ToBigInt("100::"), 64],
   [ipv6ToBigInt("2001::"), 23],
   [ipv6ToBigInt("2001:2::"), 48],

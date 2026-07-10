@@ -40,7 +40,8 @@ Errors return:
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
 | `PORT` | No | `8080` | HTTP port inside the container. |
-| `DIAGNOSTICS_WORKER_TOKEN` | Recommended |  | If set, requests must include `Authorization: Bearer <token>`. |
+| `DIAGNOSTICS_WORKER_TOKEN` | Required in production |  | Requests must include `Authorization: Bearer <token>`. |
+| `INCLUDE_RAW_DIAGNOSTICS` | No | `false` | Include raw traceroute command output. Disabled by default to avoid exposing internal hops. |
 | `TRACEROUTE_MAX_HOPS` | No | `30` | Maximum traceroute hop count. |
 
 ## Docker Compose
@@ -53,7 +54,7 @@ services:
     environment:
       ENABLE_WORKER_TOOLS: "true"
       DIAGNOSTICS_WORKER_URL: "http://diagnostics-worker:8080"
-      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN}"
+      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN:?DIAGNOSTICS_WORKER_TOKEN is required}"
     depends_on:
       diagnostics-worker:
         condition: service_healthy
@@ -64,7 +65,7 @@ services:
     cap_add:
       - NET_RAW
     environment:
-      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN}"
+      DIAGNOSTICS_WORKER_TOKEN: "${DIAGNOSTICS_WORKER_TOKEN:?DIAGNOSTICS_WORKER_TOKEN is required}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]

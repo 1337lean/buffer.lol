@@ -5,6 +5,7 @@ type CacheEntry<T> = {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 const inflight = new Map<string, Promise<unknown>>();
+const MAX_CACHE_ENTRIES = 500;
 let activeRequests = 0;
 let lastCleanup = Date.now();
 
@@ -13,6 +14,8 @@ export async function withCache<T>(key: string, ttlMs: number, factory: () => Pr
   const cached = cache.get(key) as CacheEntry<T> | undefined;
 
   if (cached && cached.expiresAt > now) {
+    cache.delete(key);
+    cache.set(key, cached);
     return cached.value;
   }
 
@@ -20,8 +23,17 @@ export async function withCache<T>(key: string, ttlMs: number, factory: () => Pr
     const value = await factory();
     cache.set(key, { value, expiresAt: Date.now() + ttlMs });
     cleanupCache(Date.now());
+    trimCache();
     return value;
   });
+}
+
+function trimCache() {
+  while (cache.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (typeof oldestKey !== "string") break;
+    cache.delete(oldestKey);
+  }
 }
 
 export async function dedupe<T>(key: string, factory: () => Promise<T>): Promise<T> {

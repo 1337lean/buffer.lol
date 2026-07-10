@@ -1,10 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { categoryMeta, getToolsByCategory, type ToolCategory } from "@/data/tools";
 
 const categories: ToolCategory[] = ["networking", "ip", "developer"];
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" }
+};
 
 export default function HomePage() {
   return (
@@ -28,7 +33,7 @@ export default function HomePage() {
 
         <section className="tool-intro" aria-labelledby="toolbox-heading">
           <div><span className="section-kicker">The toolbox</span><h2 id="toolbox-heading">Everything you need.<br />Nothing you don&apos;t.</h2></div>
-          <p>From quick network checks to everyday data transforms. Browser-ready tools run locally; network probes are clearly marked while their secure backend is being built.</p>
+          <p>From quick network checks to everyday data transforms. Browser-ready tools stay local; live diagnostics run through a restricted same-origin API.</p>
         </section>
 
         <nav className="mobile-tool-nav" aria-label="Tool categories">
