@@ -45,7 +45,6 @@ export function trustProxyHeaders() {
 
   const platform = process.env.TRUSTED_PROXY_PLATFORM?.toLowerCase();
   return (
-    process.env.NODE_ENV === "production" ||
     platform === "vercel" ||
     platform === "cloudflare" ||
     process.env.VERCEL === "1" ||

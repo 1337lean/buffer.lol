@@ -33,7 +33,7 @@ export function SiteFooter() {
       <div className="footer-brand"><Link className="brand" href="/"><span className="brand-prompt">&gt;_</span>buffer<span>.lol</span></Link><p>Fast, simple networking tools.</p></div>
       <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link>{docsUrl && <a href={docsUrl}>Docs</a>}</div>
       <div className="footer-links"><a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
-      <div className="footer-bottom"><span>© 2026 buffer.lol</span><span className="system-status"><i /> All systems nominal</span><span>Built for the curious.</span></div>
+      <div className="footer-bottom"><span>© 2026 buffer.lol</span><span>Built for the curious.</span></div>
     </footer>
   );
 }
@@ -41,6 +41,7 @@ export function SiteFooter() {
 export function SiteChrome({ children, navHomePrefix }: SiteChromeProps) {
   return (
     <>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="grid-overlay" aria-hidden="true" />
       <SiteHeader navHomePrefix={navHomePrefix} />
       {children}

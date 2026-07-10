@@ -21,12 +21,13 @@ export default function PrivacyPage() {
           <ul>
             <li>Input used in browser-ready developer tools is processed on your device and is not submitted to buffer.lol.</li>
             <li>Server-backed network and IP tools process the target you submit, the request metadata needed to complete the check, and short-lived diagnostic results.</li>
+            <li>Private analytics may collect page paths, referrers, session identifiers, outbound clicks, browser metadata, user agent, IP-derived signals, and timing information so we can understand usage and abuse patterns.</li>
             <li>Your email address and message content if you contact us.</li>
             <li>Basic technical metadata collected by the hosting platform, such as request time, IP address, user agent, and abuse-prevention signals.</li>
           </ul>
 
           <h2>How We Use It</h2>
-          <p>We use submitted data to provide requested tools, respond to messages, prevent abuse, and improve reliability. We do not sell contact emails.</p>
+          <p>We use submitted data and private analytics to provide requested tools, respond to messages, prevent abuse, understand product usage, and improve reliability. We do not sell contact emails.</p>
 
           <h2>Tool Data</h2>
           <p>JSON, Base64, hashing, UUID, timestamp, URL parsing, JWT decoding, regex testing, CIDR calculations, and user-agent utilities run locally in your browser. Ping and packet-loss/stability tests send repeated HTTPS requests from your browser to buffer.lol. Server-backed DNS, HTTP, TLS, uptime, port, RDAP, redirect, robots/sitemap, public IP, geolocation, ASN, and traceroute tools send the target to buffer.lol only to produce the requested result. Traceroute checks are handled by a restricted diagnostics worker.</p>
@@ -38,7 +39,7 @@ export default function PrivacyPage() {
           <p>For privacy questions, removal requests, or product questions, email <a href="mailto:hello@buffer.lol">hello@buffer.lol</a>.</p>
 
           <h2>Last Updated</h2>
-          <p>June 22, 2026</p>
+          <p>July 10, 2026</p>
           <p><Link href="/">Back to buffer.lol</Link></p>
         </article>
       </main>

@@ -35,7 +35,7 @@ export const categoryMeta: Record<
 export const tools: Tool[] = [
   {
     slug: "ping",
-    name: "Ping Tester",
+    name: "Browser Latency Test",
     description: "Measure this browser's latency to buffer.lol.",
     category: "networking",
     command: "latency",
@@ -43,7 +43,7 @@ export const tools: Tool[] = [
   },
   {
     slug: "packet-loss",
-    name: "Packet Loss Tester",
+    name: "Connection Stability Test",
     description: "Sample this browser's connection stability to buffer.lol.",
     category: "networking",
     command: "stability",
@@ -159,8 +159,8 @@ export const tools: Tool[] = [
   },
   {
     slug: "ip-geolocation",
-    name: "IP Geolocation",
-    description: "Estimate the country, region, and network for a public IP.",
+    name: "IP Network Lookup",
+    description: "Inspect the country, registered network, and ASN for a public IP.",
     category: "ip",
     command: "geoip",
     status: "available",

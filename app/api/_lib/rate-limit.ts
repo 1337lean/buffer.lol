@@ -19,6 +19,7 @@ type RateLimitResult = {
 };
 
 const buckets = new Map<string, Bucket>();
+const MAX_MEMORY_BUCKETS = 10_000;
 let lastCleanup = Date.now();
 
 export async function checkRateLimit(request: NextRequest, options: RateLimitOptions): Promise<RateLimitResult> {
@@ -44,12 +45,21 @@ function checkMemoryRateLimit(key: string, options: RateLimitOptions): RateLimit
   if (!bucket || bucket.resetAt <= now) {
     bucket = { count: 0, resetAt: now + options.windowMs };
     buckets.set(key, bucket);
+    trimBuckets();
   }
 
   const allowed = bucket.count < options.limit;
   if (allowed) bucket.count += 1;
 
   return toRateLimitResult(allowed, options.limit, Math.max(0, options.limit - bucket.count), bucket.resetAt);
+}
+
+function trimBuckets() {
+  while (buckets.size > MAX_MEMORY_BUCKETS) {
+    const oldestKey = buckets.keys().next().value;
+    if (typeof oldestKey !== "string") break;
+    buckets.delete(oldestKey);
+  }
 }
 
 async function checkUpstashRateLimit(key: string, options: RateLimitOptions): Promise<RateLimitResult> {

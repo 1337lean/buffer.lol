@@ -14,7 +14,17 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: ToolPageProps): Promise<Metadata> {
   const tool = getTool((await params).slug);
   if (!tool) return {};
-  return { title: tool.name, description: tool.description };
+  return {
+    title: tool.name,
+    description: tool.description,
+    alternates: { canonical: `/tools/${tool.slug}` },
+    openGraph: {
+      title: `${tool.name} | buffer.lol`,
+      description: tool.description,
+      url: `/tools/${tool.slug}`,
+      type: "website"
+    }
+  };
 }
 
 export default async function ToolPage({ params }: ToolPageProps) {

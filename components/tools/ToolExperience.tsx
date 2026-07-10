@@ -26,6 +26,22 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <span className="field-label">{children}</span>;
 }
 
+function CopyButton({ value, label = "Copy output" }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 3_000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return <button className="copy-button" onClick={copy} type="button">{copied ? "Copied" : label}</button>;
+}
+
 function JsonFormatter() {
   const [input, setInput] = useState('{"hello":"world","tools":["ping","dns","json"]}');
   const [output, setOutput] = useState("Run the formatter to see validated JSON.");
@@ -52,7 +68,10 @@ function JsonFormatter() {
         </div>
         <p className="privacy-note"><span>●</span> Processed locally in your browser.</p>
       </section>
-      <ResultPanel title="formatted.json" status={state}><pre>{output}</pre></ResultPanel>
+      <ResultPanel title="formatted.json" status={state}>
+        {state === "success" && <div className="result-actions"><CopyButton value={output} /></div>}
+        <pre>{output}</pre>
+      </ResultPanel>
     </>
   );
 }
@@ -91,7 +110,10 @@ function Base64Tool() {
         </div>
         <p className="privacy-note"><span>●</span> UTF-8 safe and processed locally.</p>
       </section>
-      <ResultPanel title="base64.txt" status={state}><pre className="wrap-output">{output}</pre></ResultPanel>
+      <ResultPanel title="base64.txt" status={state}>
+        {state === "success" && <div className="result-actions"><CopyButton value={output} /></div>}
+        <pre className="wrap-output">{output}</pre>
+      </ResultPanel>
     </>
   );
 }
@@ -119,7 +141,10 @@ function HashGenerator() {
         <div className="button-row"><button className="primary-button" onClick={generate} type="button">Generate hash <span>→</span></button></div>
         <p className="privacy-note"><span>●</span> Uses the browser Web Crypto API.</p>
       </section>
-      <ResultPanel title="digest.txt" status={state}><pre className="wrap-output">{output}</pre></ResultPanel>
+      <ResultPanel title="digest.txt" status={state}>
+        {state === "success" && <div className="result-actions"><CopyButton value={output} /></div>}
+        <pre className="wrap-output">{output}</pre>
+      </ResultPanel>
     </>
   );
 }
@@ -140,7 +165,7 @@ function UuidGenerator() {
         <p className="privacy-note"><span>●</span> Generated securely in your browser.</p>
       </section>
       <ResultPanel title="uuids.txt" status={uuids.length ? "success" : "idle"}>
-        {uuids.length ? <ol className="uuid-list">{uuids.map((uuid, index) => <li key={uuid}><span>{String(index + 1).padStart(2, "0")}</span>{uuid}</li>)}</ol> : <p className="terminal-empty">$ waiting for generation<span className="cursor" /></p>}
+        {uuids.length ? <><div className="result-actions"><CopyButton value={uuids.join("\n")} label="Copy all" /></div><ol className="uuid-list">{uuids.map((uuid, index) => <li key={uuid}><span>{String(index + 1).padStart(2, "0")}</span>{uuid}</li>)}</ol></> : <p className="terminal-empty">$ waiting for generation<span className="cursor" /></p>}
       </ResultPanel>
     </>
   );
@@ -722,7 +747,7 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
         )}
         {result.kind === "success" && (
           <div className="stacked-output">
-            {tool.slug !== "my-ip" && <p className="result-note">Completed in {result.durationMs}ms{result.requestId ? ` · ${result.requestId}` : ""}</p>}
+            {tool.slug !== "my-ip" && <p className="result-note">Completed in {result.durationMs}ms.</p>}
             {renderBackendData(tool.slug, result.data)}
           </div>
         )}
@@ -746,7 +771,38 @@ function renderBackendData(slug: string, data: unknown) {
     return <TracerouteResult data={record} />;
   }
 
-  return <pre className="wrap-output compact-pre">{JSON.stringify(data, null, 2)}</pre>;
+  return <StructuredBackendResult data={data} />;
+}
+
+function StructuredBackendResult({ data }: { data: unknown }) {
+  const serialized = JSON.stringify(data, null, 2) ?? String(data ?? "");
+
+  return (
+    <div className="stacked-output">
+      <div className="result-actions"><CopyButton value={serialized} /></div>
+      <StructuredValue value={data} />
+    </div>
+  );
+}
+
+function StructuredValue({ value }: { value: unknown }) {
+  if (Array.isArray(value)) {
+    if (!value.length) return <span className="empty-value">None</span>;
+    return <ol className="structured-list">{value.map((item, index) => <li key={index}><StructuredValue value={item} /></li>)}</ol>;
+  }
+
+  if (isRecord(value)) {
+    const entries = Object.entries(value);
+    if (!entries.length) return <span className="empty-value">None</span>;
+    return <dl className="result-list structured-result">{entries.map(([key, item]) => <div key={key}><dt>{formatLabel(key)}</dt><dd><StructuredValue value={item} /></dd></div>)}</dl>;
+  }
+
+  if (value === null || value === undefined || value === "") return <span className="empty-value">None</span>;
+  return <span>{String(value)}</span>;
+}
+
+function formatLabel(value: string) {
+  return value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[-_]/g, " ").replace(/^./, (character) => character.toUpperCase());
 }
 
 function MyIpResult({ ip }: { ip: string }) {
@@ -807,7 +863,7 @@ function TracerouteResult({ data }: { data: Record<string, unknown> }) {
         {hops.map((hop, index) => (
           <li key={`${formatUnknown(hop.hop)}-${index}`} className={hop.timeout ? "is-timeout" : ""}>
             <span>{formatUnknown(hop.hop).padStart(2, "0")}</span>
-            <strong>{hop.timeout ? "Timed out" : formatUnknown(hop.address)}</strong>
+            <strong>{hop.timeout ? "Timed out" : hop.internal === true ? "Internal hop" : formatUnknown(hop.address)}</strong>
             <em>{typeof hop.rttMs === "number" ? `${hop.rttMs}ms` : "*"}</em>
           </li>
         ))}
