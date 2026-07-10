@@ -4,6 +4,18 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Tool } from "@/data/tools";
 import { ResultPanel } from "./ResultPanel";
 
+type BufferDashWindow = Window & {
+  bufferdash?: {
+    track: (type: string, metadata?: Record<string, string | number | boolean>) => void;
+  };
+};
+
+function trackToolUse(tool: string, outcome: "success" | "error", durationMs?: number) {
+  const metadata: Record<string, string | number | boolean> = { tool, outcome };
+  if (typeof durationMs === "number") metadata.durationMs = Math.round(durationMs);
+  (window as BufferDashWindow).bufferdash?.track("tool_used", metadata);
+}
+
 export function ToolExperience({ tool }: { tool: Tool }) {
   switch (tool.slug) {
     case "ping": return <BrowserLatencyTool mode="ping" />;
@@ -518,9 +530,12 @@ function BrowserLatencyTool({ mode }: { mode: "ping" | "stability" }) {
         if (index < sampleCount - 1) await wait(160);
       }
 
-      setResult({ kind: "success", samples, summary: summarizeLatencySamples(samples) });
+      const summary = summarizeLatencySamples(samples);
+      setResult({ kind: "success", samples, summary });
+      trackToolUse(mode, summary.received > 0 ? "success" : "error", summary.avgMs ?? undefined);
     } catch (error) {
       setResult({ kind: "error", message: error instanceof Error ? error.message : "The latency test failed." });
+      trackToolUse(mode, "error");
     }
   }
 
@@ -703,6 +718,7 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
           durationMs: payload.durationMs,
           requestId: payload.requestId
         });
+        trackToolUse(tool.slug, "error", payload.durationMs);
         return;
       }
 
@@ -712,11 +728,13 @@ function BackendPlaceholder({ tool }: { tool: Tool }) {
         durationMs: payload.durationMs,
         requestId: payload.requestId
       });
+      trackToolUse(tool.slug, "success", payload.durationMs);
     } catch (error) {
       setResult({
         kind: "error",
         message: error instanceof Error ? error.message : "The backend request failed."
       });
+      trackToolUse(tool.slug, "error");
     }
   }
 

@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <ul>
             <li>Input used in browser-ready developer tools is processed on your device and is not submitted to buffer.lol.</li>
             <li>Server-backed network and IP tools process the target you submit, the request metadata needed to complete the check, and short-lived diagnostic results.</li>
-            <li>Private analytics may collect page paths, referrers, session identifiers, outbound clicks, browser metadata, user agent, IP-derived signals, and timing information so we can understand usage and abuse patterns.</li>
+            <li>Private analytics may collect page paths, referrers, session identifiers, outbound clicks, browser metadata, user agent, IP-derived signals, and timing information. Server-backed and browser latency/stability checks may also record the tool slug, outcome, and duration, but not the submitted target or browser-local tool input.</li>
             <li>Your email address and message content if you contact us.</li>
             <li>Basic technical metadata collected by the hosting platform, such as request time, IP address, user agent, and abuse-prevention signals.</li>
           </ul>
