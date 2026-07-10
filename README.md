@@ -90,7 +90,7 @@ The worker container needs `NET_RAW` for low-level network diagnostics. See `dia
 
 ## BufferDash Analytics
 
-buffer.lol can send page views, outbound clicks, sessions, and custom product events to a private BufferDash instance.
+buffer.lol can send page views, outbound clicks, sessions, and custom product events to a private BufferDash instance. Server-backed and browser-latency product events contain only the tool slug, outcome, and request duration; tool inputs are never included.
 
 1. Deploy BufferDash at a private dashboard URL, such as `https://dash.buffer.lol`.
 2. In BufferDash, open `/sites`, create a site for `buffer.lol`, and copy the generated public site key.
