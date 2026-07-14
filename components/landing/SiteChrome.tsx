@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ToolLauncher } from "@/components/tools/ToolDiscovery";
 
 type SiteChromeProps = {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "childr
         <Link href={`${prefix}#developer`}>Developer</Link>
         {docsUrl && <a href={docsUrl}>Docs</a>}
       </nav>
+      <ToolLauncher />
     </header>
   );
 }

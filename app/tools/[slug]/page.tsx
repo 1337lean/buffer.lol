@@ -4,8 +4,9 @@ import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolExperience } from "@/components/tools/ToolExperience";
 import { ToolLayout } from "@/components/tools/ToolLayout";
 import { getTool, tools } from "@/data/tools";
+import { safeTargetPrefill } from "@/lib/tool-discovery";
 
-type ToolPageProps = { params: Promise<{ slug: string }> };
+type ToolPageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ target?: string | string[] }> };
 
 export function generateStaticParams() {
   return tools.map((tool) => ({ slug: tool.slug }));
@@ -27,13 +28,14 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
   };
 }
 
-export default async function ToolPage({ params }: ToolPageProps) {
+export default async function ToolPage({ params, searchParams }: ToolPageProps) {
   const tool = getTool((await params).slug);
   if (!tool) notFound();
+  const target = tool.supportsTargetPrefill ? safeTargetPrefill((await searchParams).target) : "";
 
   return (
     <SiteChrome navHomePrefix="/">
-      <ToolLayout tool={tool}><ToolExperience tool={tool} /></ToolLayout>
+      <ToolLayout tool={tool} target={target}><ToolExperience tool={tool} initialTarget={target} /></ToolLayout>
     </SiteChrome>
   );
 }

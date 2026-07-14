@@ -3,6 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Tool } from "@/data/tools";
 import { ResultPanel } from "./ResultPanel";
+import { DiagnosticToolExperience } from "./DiagnosticTools";
 
 type BufferDashWindow = Window & {
   bufferdash?: {
@@ -16,7 +17,10 @@ function trackToolUse(tool: string, outcome: "success" | "error", durationMs?: n
   (window as BufferDashWindow).bufferdash?.track("tool_used", metadata);
 }
 
-export function ToolExperience({ tool }: { tool: Tool }) {
+export function ToolExperience({ tool, initialTarget = "" }: { tool: Tool; initialTarget?: string }) {
+  if (["dns-resolver-check", "email-dns-health", "security-headers"].includes(tool.slug)) {
+    return <DiagnosticToolExperience tool={tool} initialTarget={initialTarget} />;
+  }
   switch (tool.slug) {
     case "ping": return <BrowserLatencyTool mode="ping" />;
     case "packet-loss": return <BrowserLatencyTool mode="stability" />;
@@ -30,7 +34,7 @@ export function ToolExperience({ tool }: { tool: Tool }) {
     case "jwt-decoder": return <JwtDecoder />;
     case "regex-tester": return <RegexTester />;
     case "cidr-calculator": return <CidrCalculator />;
-    default: return <BackendPlaceholder tool={tool} />;
+    default: return <BackendPlaceholder tool={tool} initialTarget={initialTarget} />;
   }
 }
 
@@ -693,8 +697,8 @@ function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-function BackendPlaceholder({ tool }: { tool: Tool }) {
-  const [input, setInput] = useState("");
+function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialTarget?: string }) {
+  const [input, setInput] = useState(initialTarget);
   const [result, setResult] = useState<BackendResult>({ kind: "idle", message: "Waiting for input." });
   const status = result.kind === "success" ? "success" : result.kind === "error" ? "error" : result.kind === "pending" ? "pending" : "idle";
   const isLiveBackendTool = tool.status === "available";

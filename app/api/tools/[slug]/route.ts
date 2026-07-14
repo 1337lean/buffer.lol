@@ -9,6 +9,9 @@ import { getClientIp, trustProxyHeaders } from "../../_lib/client-ip";
 import { ConcurrencyLimitError, dedupe, withCache, withConcurrencyLimit } from "../../_lib/request-cache";
 import { checkRateLimit } from "../../_lib/rate-limit";
 import { isPublicIp, normalizeIpLiteral } from "../../_lib/ip";
+import { checkEmailDnsHealth, compareDnsResolvers } from "../../_lib/dns-diagnostics";
+import { DNS_RECORD_TYPES, type DnsRecordType, type ToolRequest } from "../../_lib/diagnostic-types";
+import { inspectHttpSecurity } from "../../_lib/http-security";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 type JsonRecord = Record<string, unknown>;
@@ -37,7 +40,10 @@ const implementedTools = new Set([
   "robots-sitemap",
   "my-ip",
   "ip-geolocation",
-  "asn-lookup"
+  "asn-lookup",
+  "dns-resolver-check",
+  "email-dns-health",
+  "security-headers"
 ]);
 
 const workerOnlyTools: Record<string, string> = {
@@ -64,12 +70,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     enforceDeclaredBodySize(request);
 
     const body = await readJsonBody(request);
-    const input = typeof body.input === "string" ? body.input : "";
+    const toolRequest = parseToolRequest(slug, body);
+    const { input } = toolRequest;
     const rateLimit = await checkRateLimit(request, {
       keyPrefix: `tools:${slug}`,
-      limit: 30,
+      limit: slug === "dns-resolver-check" || slug === "email-dns-health" ? 15 : 30,
       windowMs: 60_000,
-      targetKey: hashKey(input.trim().toLowerCase() || "empty")
+      targetKey: hashKey(normalizeRateLimitTarget(slug, input))
     });
     responseHeaders = rateLimit.headers;
 
@@ -86,11 +93,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const execute = () => withConcurrencyLimit(() =>
       workerOnlyTools[slug]
         ? runWorkerTool(slug, input, requestId)
-        : runTool(slug, input, request)
+        : runTool(slug, toolRequest, request)
     );
     const data = requestScopedTools.has(slug)
       ? await execute()
-      : await dedupe(`live:${slug}:${hashKey(input)}:${Math.floor(Date.now() / LIVE_DEDUPE_MS)}`, execute);
+      : await dedupe(makeRequestDedupeKey(slug, toolRequest, Date.now()), execute);
 
     return envelope({ data, started, requestId, headers: responseHeaders });
   } catch (error) {
@@ -238,7 +245,8 @@ function hashKey(value: string) {
   return createHash("sha256").update(value).digest("hex").slice(0, 32);
 }
 
-async function runTool(slug: string, input: string, request: NextRequest) {
+async function runTool(slug: string, toolRequest: ToolRequest, request: NextRequest) {
+  const { input, options } = toolRequest;
   switch (slug) {
     case "dns-lookup":
       return lookupDns(input);
@@ -262,6 +270,15 @@ async function runTool(slug: string, input: string, request: NextRequest) {
       return lookupIpNetwork(input);
     case "asn-lookup":
       return lookupAsn(input);
+    case "dns-resolver-check":
+      return compareDnsResolvers(normalizeHostname(requireInput(input, "Enter a domain name.")), options?.recordType ?? "A");
+    case "email-dns-health":
+      return checkEmailDnsHealth(normalizeHostname(requireInput(input, "Enter a domain name.")), options?.dkimSelector);
+    case "security-headers":
+      return inspectHttpSecurity(input, safeFetch, normalizeHttpUrl).catch((error: unknown) => {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(error instanceof Error ? error.message : "Security header inspection failed.", 502);
+      });
     default:
       throw new ApiError("Unknown tool endpoint.", 404);
   }
@@ -524,6 +541,58 @@ export async function readJsonBody(request: NextRequest) {
   }
 }
 
+export function parseToolRequest(slug: string, body: JsonRecord): ToolRequest {
+  const input = typeof body.input === "string" ? body.input : "";
+  const rawOptions = isRecord(body.options) ? body.options : undefined;
+
+  if (slug === "dns-resolver-check") {
+    if (body.options !== undefined && !rawOptions) throw new ApiError("Options must be a JSON object.", 400);
+    const rawRecordType = rawOptions?.recordType;
+    if (rawRecordType !== undefined && (typeof rawRecordType !== "string" || !DNS_RECORD_TYPES.includes(rawRecordType as (typeof DNS_RECORD_TYPES)[number]))) {
+      throw new ApiError(`Record type must be one of: ${DNS_RECORD_TYPES.join(", ")}.`, 400);
+    }
+    return { input, options: { recordType: (rawRecordType as DnsRecordType | undefined) ?? "A" } };
+  }
+
+  if (slug === "email-dns-health") {
+    if (body.options !== undefined && !rawOptions) throw new ApiError("Options must be a JSON object.", 400);
+    const rawSelector = rawOptions?.dkimSelector;
+    if (rawSelector !== undefined && typeof rawSelector !== "string") {
+      throw new ApiError("DKIM selector must be a string.", 400);
+    }
+    const dkimSelector = typeof rawSelector === "string" ? rawSelector.trim().toLowerCase() : "";
+    if (dkimSelector && !isValidDkimSelector(dkimSelector)) {
+      throw new ApiError("Enter a valid DKIM selector.", 400);
+    }
+    return { input, options: dkimSelector ? { dkimSelector } : {} };
+  }
+
+  return { input };
+}
+
+export function makeRequestDedupeKey(slug: string, request: ToolRequest, now: number) {
+  const optionKey = JSON.stringify({
+    recordType: request.options?.recordType ?? null,
+    dkimSelector: request.options?.dkimSelector ?? null
+  });
+  return `live:${slug}:${hashKey(`${request.input}\u0000${optionKey}`)}:${Math.floor(now / LIVE_DEDUPE_MS)}`;
+}
+
+function isValidDkimSelector(value: string) {
+  return value.length <= 253 && value.split(".").every((label) => /^[a-z0-9](?:[a-z0-9_-]{0,61}[a-z0-9])?$/.test(label));
+}
+
+function normalizeRateLimitTarget(slug: string, input: string) {
+  const fallback = input.trim().toLowerCase() || "empty";
+  try {
+    if (["dns-resolver-check", "email-dns-health", "dns-lookup"].includes(slug)) return normalizeHostname(input);
+    if (["security-headers", "http-headers", "uptime", "redirect-checker", "robots-sitemap"].includes(slug)) return normalizeHttpUrl(input).href;
+  } catch {
+    // Invalid targets still receive a stable rate-limit bucket before validation returns an error.
+  }
+  return fallback;
+}
+
 function envelope(options: { data?: unknown; error?: string; started: number; requestId: string; status?: number; headers?: Record<string, string> }) {
   const payload: Envelope = {
     durationMs: Date.now() - options.started,
@@ -688,7 +757,7 @@ function requirePublicIp(input: string) {
   return raw;
 }
 
-async function safeFetch(url: URL, init: RequestInit) {
+async function safeFetch(url: URL, init: RequestInit, headersOnly = false) {
   const addresses = await resolvePublicHost(url.hostname);
   const selected = addresses[0];
   const dispatcher = createPinnedDispatcher(selected);
@@ -707,6 +776,14 @@ async function safeFetch(url: URL, init: RequestInit) {
     } as RequestInit & { dispatcher: Dispatcher });
 
     if ((init.method || "GET").toUpperCase() === "HEAD") return response;
+    if (headersOnly) {
+      await response.body?.cancel().catch(() => undefined);
+      return new Response(null, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+    }
 
     const body = await readLimitedText(response, MAX_TEXT_BYTES);
     return new Response(body, {

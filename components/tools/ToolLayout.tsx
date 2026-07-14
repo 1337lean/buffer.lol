@@ -1,9 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { categoryMeta, type Tool } from "@/data/tools";
+import { getTool, getToolsByCategory } from "@/data/tools";
+import { RelatedTools, ToolVisitTracker } from "./ToolDiscovery";
 
-export function ToolLayout({ tool, children }: { tool: Tool; children: ReactNode }) {
+export function ToolLayout({ tool, children, target }: { tool: Tool; children: ReactNode; target?: string }) {
   const category = categoryMeta[tool.category];
+  const related = (tool.relatedSlugs?.map(getTool).filter((item): item is Tool => Boolean(item))
+    ?? getToolsByCategory(tool.category).filter((item) => item.slug !== tool.slug)).slice(0, 3);
 
   return (
     <main className="tool-page" id="main-content">
@@ -22,7 +26,9 @@ export function ToolLayout({ tool, children }: { tool: Tool; children: ReactNode
         <div className="tool-command"><span>$</span> {tool.command}<i aria-hidden="true" /></div>
       </header>
 
+      <ToolVisitTracker slug={tool.slug} />
       <div className="tool-workspace">{children}</div>
+      <RelatedTools source={tool.slug} related={related} target={target} />
     </main>
   );
 }

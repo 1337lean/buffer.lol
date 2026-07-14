@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
+import { QuickAccess } from "@/components/tools/ToolDiscovery";
 import { categoryMeta, getToolsByCategory, type ToolCategory } from "@/data/tools";
 
 const categories: ToolCategory[] = ["networking", "ip", "developer"];
@@ -30,6 +31,8 @@ export default function HomePage() {
 
           <HeroTerminal />
         </section>
+
+        <QuickAccess />
 
         <section className="tool-intro" aria-labelledby="toolbox-heading">
           <div><span className="section-kicker">The toolbox</span><h2 id="toolbox-heading">Everything you need.<br />Nothing you don&apos;t.</h2></div>
