@@ -9,6 +9,10 @@ export type Tool = {
   status: "available" | "backend";
   inputLabel?: string;
   inputPlaceholder?: string;
+  keywords: string[];
+  featured?: boolean;
+  relatedSlugs?: string[];
+  supportsTargetPrefill?: boolean;
 };
 
 export const categoryMeta: Record<
@@ -32,7 +36,7 @@ export const categoryMeta: Record<
   }
 };
 
-export const tools: Tool[] = [
+const toolDefinitions: Array<Omit<Tool, "keywords"> & { keywords?: string[] }> = [
   {
     slug: "ping",
     name: "Browser Latency Test",
@@ -67,7 +71,10 @@ export const tools: Tool[] = [
     command: "dig",
     status: "available",
     inputLabel: "Domain name",
-    inputPlaceholder: "example.com"
+    inputPlaceholder: "example.com",
+    keywords: ["records", "domain", "resolver"],
+    featured: true,
+    supportsTargetPrefill: true
   },
   {
     slug: "http-headers",
@@ -77,7 +84,10 @@ export const tools: Tool[] = [
     command: "curl -I",
     status: "available",
     inputLabel: "Website URL",
-    inputPlaceholder: "https://example.com"
+    inputPlaceholder: "https://example.com",
+    keywords: ["response", "curl", "server", "cache"],
+    featured: true,
+    supportsTargetPrefill: true
   },
   {
     slug: "ssl-checker",
@@ -87,7 +97,9 @@ export const tools: Tool[] = [
     command: "openssl",
     status: "available",
     inputLabel: "Hostname",
-    inputPlaceholder: "example.com"
+    inputPlaceholder: "example.com",
+    keywords: ["tls", "certificate", "https", "expiry"],
+    supportsTargetPrefill: true
   },
   {
     slug: "uptime",
@@ -97,7 +109,8 @@ export const tools: Tool[] = [
     command: "status",
     status: "available",
     inputLabel: "Website URL",
-    inputPlaceholder: "https://example.com"
+    inputPlaceholder: "https://example.com",
+    supportsTargetPrefill: true
   },
   {
     slug: "port-checker",
@@ -107,7 +120,8 @@ export const tools: Tool[] = [
     command: "nc -z",
     status: "available",
     inputLabel: "Host and port",
-    inputPlaceholder: "example.com:443"
+    inputPlaceholder: "example.com:443",
+    supportsTargetPrefill: true
   },
   {
     slug: "cidr-calculator",
@@ -125,7 +139,9 @@ export const tools: Tool[] = [
     command: "whois",
     status: "available",
     inputLabel: "Domain or IP",
-    inputPlaceholder: "example.com"
+    inputPlaceholder: "example.com",
+    keywords: ["registration", "registrar", "rdap", "domain"],
+    supportsTargetPrefill: true
   },
   {
     slug: "redirect-checker",
@@ -135,7 +151,9 @@ export const tools: Tool[] = [
     command: "redirects",
     status: "available",
     inputLabel: "Website URL",
-    inputPlaceholder: "https://example.com"
+    inputPlaceholder: "https://example.com",
+    keywords: ["location", "chain", "http"],
+    supportsTargetPrefill: true
   },
   {
     slug: "robots-sitemap",
@@ -145,7 +163,47 @@ export const tools: Tool[] = [
     command: "robots",
     status: "available",
     inputLabel: "Website URL",
-    inputPlaceholder: "https://example.com"
+    inputPlaceholder: "https://example.com",
+    supportsTargetPrefill: true
+  },
+  {
+    slug: "dns-resolver-check",
+    name: "DNS Resolver Comparison",
+    description: "Compare normalized DNS answers from four public recursive resolvers.",
+    category: "networking",
+    command: "dig @all",
+    status: "available",
+    inputLabel: "Domain name",
+    inputPlaceholder: "example.com",
+    keywords: ["dns", "propagation", "cache", "cloudflare", "google", "quad9", "opendns"],
+    relatedSlugs: ["dns-lookup", "email-dns-health", "whois-lookup"],
+    supportsTargetPrefill: true
+  },
+  {
+    slug: "email-dns-health",
+    name: "Email DNS Health",
+    description: "Validate published MX, SPF, DMARC, DKIM, MTA-STS, and TLS reporting records.",
+    category: "networking",
+    command: "mail dns",
+    status: "available",
+    inputLabel: "Email domain",
+    inputPlaceholder: "example.com",
+    keywords: ["email", "mail", "mx", "spf", "dmarc", "dkim", "mta-sts", "tlsrpt"],
+    relatedSlugs: ["dns-lookup", "dns-resolver-check", "ssl-checker"],
+    supportsTargetPrefill: true
+  },
+  {
+    slug: "security-headers",
+    name: "HTTP Security Headers",
+    description: "Review transport and browser security headers with actionable recommendations.",
+    category: "networking",
+    command: "headers --safe",
+    status: "available",
+    inputLabel: "Website URL",
+    inputPlaceholder: "https://example.com",
+    keywords: ["security", "https", "hsts", "csp", "clickjacking", "permissions", "coop", "corp"],
+    relatedSlugs: ["http-headers", "redirect-checker", "ssl-checker"],
+    supportsTargetPrefill: true
   },
   {
     slug: "my-ip",
@@ -155,7 +213,8 @@ export const tools: Tool[] = [
     command: "whoami",
     status: "available",
     inputLabel: "Public address",
-    inputPlaceholder: "Detected automatically"
+    inputPlaceholder: "Detected automatically",
+    featured: true
   },
   {
     slug: "ip-geolocation",
@@ -165,7 +224,8 @@ export const tools: Tool[] = [
     command: "geoip",
     status: "available",
     inputLabel: "IP address",
-    inputPlaceholder: "8.8.8.8"
+    inputPlaceholder: "8.8.8.8",
+    supportsTargetPrefill: true
   },
   {
     slug: "asn-lookup",
@@ -175,7 +235,8 @@ export const tools: Tool[] = [
     command: "whois",
     status: "available",
     inputLabel: "IP address or ASN",
-    inputPlaceholder: "1.1.1.1 or AS13335"
+    inputPlaceholder: "1.1.1.1 or AS13335",
+    supportsTargetPrefill: true
   },
   {
     slug: "user-agent",
@@ -191,7 +252,9 @@ export const tools: Tool[] = [
     description: "Validate, format, and minify JSON without sending it anywhere.",
     category: "developer",
     command: "jq",
-    status: "available"
+    status: "available",
+    keywords: ["json", "validate", "pretty print", "minify"],
+    featured: true
   },
   {
     slug: "base64",
@@ -250,6 +313,8 @@ export const tools: Tool[] = [
     status: "available"
   }
 ];
+
+export const tools: Tool[] = toolDefinitions.map((tool) => ({ ...tool, keywords: tool.keywords ?? [] }));
 
 export function getToolsByCategory(category: ToolCategory) {
   return tools.filter((tool) => tool.category === category);
