@@ -1,21 +1,11 @@
-function analyticsOrigin() {
-  try {
-    const url = new URL(process.env.BUFFERDASH_URL || "");
-    return url.protocol === "https:" ? url.origin : null;
-  } catch {
-    return null;
-  }
-}
-
 const isDevelopment = process.env.NODE_ENV !== "production";
-const bufferDashOrigin = analyticsOrigin();
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://*.buffer.lol${isDevelopment ? " 'unsafe-eval'" : ""}${bufferDashOrigin ? ` ${bufferDashOrigin}` : ""}`,
+  `script-src 'self' 'unsafe-inline' https://*.buffer.lol${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.buffer.lol${isDevelopment ? " ws: wss:" : ""}${bufferDashOrigin ? ` ${bufferDashOrigin}` : ""}`,
+  `connect-src 'self' https://*.buffer.lol${isDevelopment ? " ws: wss:" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

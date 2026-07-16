@@ -5,18 +5,6 @@ import type { Tool } from "@/data/tools";
 import { ResultPanel } from "./ResultPanel";
 import { DiagnosticToolExperience } from "./DiagnosticTools";
 
-type BufferDashWindow = Window & {
-  bufferdash?: {
-    track: (type: string, metadata?: Record<string, string | number | boolean>) => void;
-  };
-};
-
-function trackToolUse(tool: string, outcome: "success" | "error", durationMs?: number) {
-  const metadata: Record<string, string | number | boolean> = { tool, outcome };
-  if (typeof durationMs === "number") metadata.durationMs = Math.round(durationMs);
-  (window as BufferDashWindow).bufferdash?.track("tool_used", metadata);
-}
-
 export function ToolExperience({ tool, initialTarget = "" }: { tool: Tool; initialTarget?: string }) {
   if (["dns-resolver-check", "email-dns-health", "security-headers"].includes(tool.slug)) {
     return <DiagnosticToolExperience tool={tool} initialTarget={initialTarget} />;
@@ -536,10 +524,8 @@ function BrowserLatencyTool({ mode }: { mode: "ping" | "stability" }) {
 
       const summary = summarizeLatencySamples(samples);
       setResult({ kind: "success", samples, summary });
-      trackToolUse(mode, summary.received > 0 ? "success" : "error", summary.avgMs ?? undefined);
     } catch (error) {
       setResult({ kind: "error", message: error instanceof Error ? error.message : "The latency test failed." });
-      trackToolUse(mode, "error");
     }
   }
 
@@ -722,7 +708,6 @@ function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialT
           durationMs: payload.durationMs,
           requestId: payload.requestId
         });
-        trackToolUse(tool.slug, "error", payload.durationMs);
         return;
       }
 
@@ -732,13 +717,11 @@ function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialT
         durationMs: payload.durationMs,
         requestId: payload.requestId
       });
-      trackToolUse(tool.slug, "success", payload.durationMs);
     } catch (error) {
       setResult({
         kind: "error",
         message: error instanceof Error ? error.message : "The backend request failed."
       });
-      trackToolUse(tool.slug, "error");
     }
   }
 

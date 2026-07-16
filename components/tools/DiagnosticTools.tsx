@@ -21,14 +21,6 @@ type RunState =
   | { kind: "error"; message: string; requestId?: string }
   | { kind: "success"; data: unknown; durationMs?: number };
 
-type BufferDashWindow = Window & {
-  bufferdash?: { track: (type: string, metadata?: Record<string, string | number | boolean>) => void };
-};
-
-function track(type: string, metadata?: Record<string, string | number | boolean>) {
-  (window as BufferDashWindow).bufferdash?.track(type, metadata);
-}
-
 export function DiagnosticToolExperience({ tool, initialTarget = "" }: { tool: Tool; initialTarget?: string }) {
   if (tool.slug === "dns-resolver-check") return <ResolverComparison tool={tool} initialTarget={initialTarget} />;
   if (tool.slug === "email-dns-health") return <EmailDnsHealth tool={tool} initialTarget={initialTarget} />;
@@ -104,14 +96,11 @@ function useDiagnosticRequest(slug: string): [RunState, (input: string, options?
       const payload = await response.json() as Envelope;
       if (!response.ok || payload.error) {
         setState({ kind: "error", message: payload.error || `Request failed with HTTP ${response.status}.`, requestId: payload.requestId });
-        track("tool_used", { tool: slug, outcome: "error", ...(typeof payload.durationMs === "number" ? { durationMs: Math.round(payload.durationMs) } : {}) });
         return;
       }
       setState({ kind: "success", data: payload.data, durationMs: payload.durationMs });
-      track("tool_used", { tool: slug, outcome: "success", ...(typeof payload.durationMs === "number" ? { durationMs: Math.round(payload.durationMs) } : {}) });
     } catch (error) {
       setState({ kind: "error", message: error instanceof Error ? error.message : "The diagnostics request failed." });
-      track("tool_used", { tool: slug, outcome: "error" });
     }
   }
 
@@ -140,7 +129,7 @@ function ResolverResults({ result }: { result: ResolverComparisonResult }) {
           {resolver.answers.length ? <ul>{resolver.answers.map((answer) => <li key={answer}>{answer}</li>)}</ul> : <p>{resolver.error || "No answer was returned."}</p>}
         </article>
       ))}</div>
-      <WorkflowLinks source="dns-resolver-check" target={result.domain} links={["dns-lookup", "email-dns-health"]} />
+      <WorkflowLinks target={result.domain} links={["dns-lookup", "email-dns-health"]} />
     </>
   );
 }
@@ -157,7 +146,7 @@ function EmailResults({ result }: { result: EmailDnsHealthResult }) {
         </article>
       ))}</div>
       <p className="result-note">This report checks published DNS configuration only. It does not measure inbox placement, sender reputation, or complete deliverability.</p>
-      <WorkflowLinks source="email-dns-health" target={result.domain} links={["dns-lookup", "dns-resolver-check", "ssl-checker"]} />
+      <WorkflowLinks target={result.domain} links={["dns-lookup", "dns-resolver-check", "ssl-checker"]} />
     </>
   );
 }
@@ -175,7 +164,7 @@ function SecurityResults({ result }: { result: HttpSecurityResult }) {
           {check.recommendation && <small>{check.recommendation}</small>}
         </article>
       ))}</div>
-      <WorkflowLinks source="security-headers" target={result.finalUrl} links={["http-headers", "redirect-checker", "ssl-checker"]} />
+      <WorkflowLinks target={result.finalUrl} links={["http-headers", "redirect-checker", "ssl-checker"]} />
     </>
   );
 }
@@ -188,9 +177,9 @@ export function StatusChip({ status, label }: { status: DiagnosticStatus | Resol
   return <span className={`status-chip status-chip-${status}`}>{label || status.replace("-", " ")}</span>;
 }
 
-function WorkflowLinks({ source, target, links }: { source: string; target: string; links: string[] }) {
+function WorkflowLinks({ target, links }: { target: string; links: string[] }) {
   const names: Record<string, string> = { "dns-lookup": "DNS Lookup", "email-dns-health": "Email DNS Health", "dns-resolver-check": "DNS Resolver Comparison", "ssl-checker": "SSL Certificate Checker", "http-headers": "HTTP Header Inspector", "redirect-checker": "Redirect Checker" };
-  return <div className="result-workflows">{links.map((slug) => <Link key={slug} href={`/tools/${slug}?target=${encodeURIComponent(target)}`} onClick={() => track("related_tool_opened", { source, destination: slug })}>{names[slug]} <span aria-hidden="true">↗</span></Link>)}</div>;
+  return <div className="result-workflows">{links.map((slug) => <Link key={slug} href={`/tools/${slug}?target=${encodeURIComponent(target)}`}>{names[slug]} <span aria-hidden="true">↗</span></Link>)}</div>;
 }
 
 function CopyJsonButton({ value }: { value: unknown }) {

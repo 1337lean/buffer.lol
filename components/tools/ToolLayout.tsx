@@ -28,7 +28,7 @@ export function ToolLayout({ tool, children, target }: { tool: Tool; children: R
 
       <ToolVisitTracker slug={tool.slug} />
       <div className="tool-workspace">{children}</div>
-      <RelatedTools source={tool.slug} related={related} target={target} />
+      <RelatedTools related={related} target={target} />
     </main>
   );
 }

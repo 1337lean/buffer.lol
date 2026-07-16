@@ -6,17 +6,9 @@ import { DEFAULT_QUICK_ACCESS, readRecentTools, recordRecentTool, searchTools } 
 import { getTool, tools, type Tool } from "@/data/tools";
 
 type LauncherLocation = "header" | "quick_access";
-type BufferDashWindow = Window & {
-  bufferdash?: { track: (type: string, metadata?: Record<string, string | number | boolean>) => void };
-};
-
 const VALID_SLUGS = new Set(tools.map((tool) => tool.slug));
 const RECENTS_CHANGED_EVENT = "buffer:recent-tools-changed";
 const OPEN_LAUNCHER_EVENT = "buffer:open-tool-launcher";
-
-function track(type: string, metadata?: Record<string, string | number | boolean>) {
-  (window as BufferDashWindow).bufferdash?.track(type, metadata);
-}
 
 function getQuickSlugs() {
   if (typeof window === "undefined") return DEFAULT_QUICK_ACCESS;
@@ -45,7 +37,6 @@ export function ToolLauncher() {
     setOpen(true);
     setQuery("");
     setActiveIndex(0);
-    track("tool_launcher_opened", { location });
   }
 
   function close() {
@@ -53,8 +44,7 @@ export function ToolLauncher() {
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
 
-  function choose(tool: Tool, source: string) {
-    track("tool_selected", { tool: tool.slug, source });
+  function choose() {
     setOpen(false);
   }
 
@@ -109,7 +99,7 @@ export function ToolLauncher() {
                   if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(0, index - 1)); }
                   if (event.key === "Enter" && results[activeIndex]) {
                     event.preventDefault();
-                    choose(results[activeIndex], query.trim() ? "launcher_search" : "launcher_quick_access");
+                    choose();
                     window.location.assign(`/tools/${results[activeIndex].slug}`);
                   }
                 }}
@@ -128,7 +118,7 @@ export function ToolLauncher() {
                   role="option"
                   aria-selected={index === activeIndex}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => choose(tool, query.trim() ? "launcher_search" : "launcher_quick_access")}
+                  onClick={choose}
                 >
                   <span className="command-icon" aria-hidden="true">{tool.command}</span>
                   <span><strong>{tool.name}</strong><small>{tool.description}</small></span>
@@ -161,7 +151,7 @@ export function QuickAccess() {
     <section className="quick-access" aria-label="Quick access tools">
       <span>Quick access</span>
       <div>{quickTools.map((tool) => (
-        <Link key={tool.slug} href={`/tools/${tool.slug}`} onClick={() => track("tool_selected", { tool: tool.slug, source: "quick_access" })}>{tool.name}</Link>
+        <Link key={tool.slug} href={`/tools/${tool.slug}`}>{tool.name}</Link>
       ))}</div>
       <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(OPEN_LAUNCHER_EVENT, { detail: "quick_access" }))}>Find another <span aria-hidden="true">⌘K</span></button>
     </section>
@@ -178,7 +168,7 @@ export function ToolVisitTracker({ slug }: { slug: string }) {
   return null;
 }
 
-export function RelatedTools({ source, related, target }: { source: string; related: Tool[]; target?: string }) {
+export function RelatedTools({ related, target }: { related: Tool[]; target?: string }) {
   return (
     <nav className="related-tools" aria-label="Related tools">
       <span>Continue diagnosing</span>
@@ -186,7 +176,7 @@ export function RelatedTools({ source, related, target }: { source: string; rela
         const href = target && tool.supportsTargetPrefill
           ? `/tools/${tool.slug}?target=${encodeURIComponent(target)}`
           : `/tools/${tool.slug}`;
-        return <Link key={tool.slug} href={href} onClick={() => track("related_tool_opened", { source, destination: tool.slug })}>{tool.name}<span aria-hidden="true">↗</span></Link>;
+        return <Link key={tool.slug} href={href}>{tool.name}<span aria-hidden="true">↗</span></Link>;
       })}</div>
     </nav>
   );
