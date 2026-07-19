@@ -5,14 +5,14 @@ const baseUrl = "https://buffer.lol";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  const staticRoutes = ["", "/privacy", "/terms"];
+  const staticRoutes = ["", "/privacy", "/terms", "/ip-lens", "/ip-lens/privacy", "/ip-lens/support"];
 
   return [
     ...staticRoutes.map((route) => ({
       url: `${baseUrl}${route}`,
       lastModified,
-      changeFrequency: route ? "yearly" as const : "weekly" as const,
-      priority: route ? 0.3 : 1
+      changeFrequency: route === "/ip-lens" ? "monthly" as const : route ? "yearly" as const : "weekly" as const,
+      priority: route === "/ip-lens" ? 0.8 : route ? 0.3 : 1
     })),
     ...tools.map((tool) => ({
       url: `${baseUrl}/tools/${tool.slug}`,

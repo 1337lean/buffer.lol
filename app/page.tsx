@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { IPLensPromo } from "@/components/ip-lens/IPLensPromo";
 import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
@@ -33,6 +34,8 @@ export default function HomePage() {
         </section>
 
         <QuickAccess />
+
+        <IPLensPromo />
 
         <section className="tool-intro" aria-labelledby="toolbox-heading">
           <div><span className="section-kicker">The toolbox</span><h2 id="toolbox-heading">Everything you need.<br />Nothing you don&apos;t.</h2></div>
