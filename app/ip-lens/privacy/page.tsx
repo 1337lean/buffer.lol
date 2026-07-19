@@ -26,7 +26,7 @@ export default function IPLensPrivacyPage() {
           <p>IP Lens is a native iPhone networking utility. It has no accounts, advertising, analytics, tracking, attribution SDK, developer-operated backend, or recurring subscription.</p>
 
           <h2>How Lookups Work</h2>
-          <p>IP Lens does not operate its own lookup backend. Automatic current-IP lookups and addresses you enter are sent directly from your device to the selected IP data provider. Other network utilities disclose their destination before sending a request.</p>
+          <p>IP Lens does not operate its own lookup backend. After onboarding, an automatic current-IP lookup is enabled by default and can be disabled in Settings. It never runs behind the onboarding screens. Current-IP lookups and addresses you enter are sent directly from your device to the selected IP data provider. Other network utilities disclose their destination before sending a request.</p>
 
           <h2>Third-Party Providers</h2>
           <ul>
@@ -58,8 +58,8 @@ export default function IPLensPrivacyPage() {
           <p>For privacy questions, email <a href={`mailto:${ipLensConfig.supportEmail}`}>{ipLensConfig.supportEmail}</a> or visit <Link href="/ip-lens/support">IP Lens support</Link>.</p>
 
           <h2>Last Updated</h2>
-          <p>July 18, 2026</p>
-          <p><Link href="/ip-lens">Back to IP Lens</Link></p>
+          <p>July 19, 2026</p>
+          <p><Link href="/ip-lens">Back to IP Lens</Link> · <Link href="/ip-lens/terms">Read the terms</Link></p>
         </article>
       </main>
     </SiteChrome>

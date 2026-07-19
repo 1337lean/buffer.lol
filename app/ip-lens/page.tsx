@@ -34,8 +34,7 @@ const sampleFields = [
   ["IP version", "IPv4"],
   ["ASN", "AS64500 · sample"],
   ["Provider", "Example Network"],
-  ["Reverse DNS", "host-42.example.test"],
-  ["Network range", "203.0.113.0/24"],
+  ["Provider domain", "example.test"],
   ["Approximate region", "Example region"]
 ] as const;
 
@@ -149,6 +148,7 @@ export default function IPLensPage() {
               <p>Free IP lookups go to {ipLensConfig.providers.freeIPData}; personal-key lookups go to {ipLensConfig.providers.personalIPData}. DNS queries go only to the selected {ipLensConfig.providers.dns} resolver, while registration queries go directly to the {ipLensConfig.providers.registration}.</p>
               <div className="privacy-links">
                 <Link href="/ip-lens/privacy">Read the IP Lens privacy notice <span aria-hidden="true">→</span></Link>
+                <Link href="/ip-lens/terms">Read the IP Lens terms <span aria-hidden="true">→</span></Link>
                 <Link href="/ip-lens/support">Contact support <span aria-hidden="true">→</span></Link>
               </div>
             </div>

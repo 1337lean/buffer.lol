@@ -36,7 +36,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="footer-brand"><Link className="brand" href="/"><span className="brand-prompt">&gt;_</span>buffer<span>.lol</span></Link><p>Fast, simple networking tools.</p></div>
       <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link><Link href="/ip-lens">IP Lens</Link>{docsUrl && <a href={docsUrl}>Docs</a>}</div>
-      <div className="footer-links"><Link href="/ip-lens/privacy">IP Lens privacy</Link><Link href="/ip-lens/support">Support &amp; feature requests</Link>{ipLensConfig.appStoreUrl && <a href={ipLensConfig.appStoreUrl} rel="noreferrer" target="_blank">App Store ↗</a>}<a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Site privacy</Link><Link href="/terms">Terms</Link></div>
+      <div className="footer-links"><Link href="/ip-lens/privacy">IP Lens privacy</Link><Link href="/ip-lens/terms">IP Lens terms</Link><Link href="/ip-lens/support">Support &amp; feature requests</Link>{ipLensConfig.appStoreUrl && <a href={ipLensConfig.appStoreUrl} rel="noreferrer" target="_blank">App Store ↗</a>}<a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Site privacy</Link><Link href="/terms">Site terms</Link></div>
       <div className="footer-bottom"><span>© 2026 buffer.lol</span><span>Built for the curious.</span></div>
     </footer>
   );
