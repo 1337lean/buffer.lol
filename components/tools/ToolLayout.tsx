@@ -1,10 +1,12 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { categoryMeta, type Tool } from "@/data/tools";
 import { getTool, getToolsByCategory } from "@/data/tools";
 import { RelatedTools, ToolVisitTracker } from "./ToolDiscovery";
+import { ToolGuide } from "./ToolGuide";
+import { TargetAwareRelatedTools } from "./TargetAwareTools";
 
-export function ToolLayout({ tool, children, target }: { tool: Tool; children: ReactNode; target?: string }) {
+export function ToolLayout({ tool, children }: { tool: Tool; children: ReactNode }) {
   const category = categoryMeta[tool.category];
   const related = (tool.relatedSlugs?.map(getTool).filter((item): item is Tool => Boolean(item))
     ?? getToolsByCategory(tool.category).filter((item) => item.slug !== tool.slug)).slice(0, 3);
@@ -28,7 +30,10 @@ export function ToolLayout({ tool, children, target }: { tool: Tool; children: R
 
       <ToolVisitTracker slug={tool.slug} />
       <div className="tool-workspace">{children}</div>
-      <RelatedTools related={related} target={target} />
+      <ToolGuide tool={tool} />
+      <Suspense fallback={<RelatedTools related={related} />}>
+        <TargetAwareRelatedTools related={related} allowTarget={Boolean(tool.supportsTargetPrefill)} />
+      </Suspense>
     </main>
   );
 }

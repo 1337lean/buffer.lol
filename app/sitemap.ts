@@ -1,24 +1,26 @@
 import type { MetadataRoute } from "next";
-import { tools } from "@/data/tools";
+import { tools } from "../data/tools";
+import { siteUrl } from "../lib/seo";
 
-const baseUrl = "https://buffer.lol";
+const staticRoutes = [
+  { path: "", updatedAt: "2026-07-19" },
+  { path: "/privacy", updatedAt: "2026-07-19" },
+  { path: "/terms", updatedAt: "2026-06-22" },
+  { path: "/ip-lens", updatedAt: "2026-07-19" },
+  { path: "/ip-lens/privacy", updatedAt: "2026-07-19" },
+  { path: "/ip-lens/terms", updatedAt: "2026-07-19" },
+  { path: "/ip-lens/support", updatedAt: "2026-07-19" }
+] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
-  const staticRoutes = ["", "/privacy", "/terms", "/ip-lens", "/ip-lens/privacy", "/ip-lens/terms", "/ip-lens/support"];
-
   return [
     ...staticRoutes.map((route) => ({
-      url: `${baseUrl}${route}`,
-      lastModified,
-      changeFrequency: route === "/ip-lens" ? "monthly" as const : route ? "yearly" as const : "weekly" as const,
-      priority: route === "/ip-lens" ? 0.8 : route ? 0.3 : 1
+      url: `${siteUrl}${route.path}`,
+      lastModified: route.updatedAt
     })),
     ...tools.map((tool) => ({
-      url: `${baseUrl}/tools/${tool.slug}`,
-      lastModified,
-      changeFrequency: "monthly" as const,
-      priority: 0.7
+      url: `${siteUrl}/tools/${tool.slug}`,
+      lastModified: tool.seo.updatedAt
     }))
   ];
 }

@@ -1,11 +1,11 @@
 const isDevelopment = process.env.NODE_ENV !== "production";
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://*.buffer.lol${isDevelopment ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://*.buffer.lol https://static.cloudflareinsights.com${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.buffer.lol${isDevelopment ? " ws: wss:" : ""}`,
+  `connect-src 'self' https://*.buffer.lol https://cloudflareinsights.com${isDevelopment ? " ws: wss:" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -17,6 +17,14 @@ const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
   poweredByHeader: false,
+  async redirects() {
+    return [{
+      source: "/:path*",
+      has: [{ type: "host", value: "www.buffer.lol" }],
+      destination: "https://buffer.lol/:path*",
+      permanent: true
+    }];
+  },
   async headers() {
     return [{
       source: "/(.*)",

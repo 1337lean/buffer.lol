@@ -5,23 +5,36 @@ import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { QuickAccess } from "@/components/tools/ToolDiscovery";
-import { categoryMeta, getToolsByCategory, type ToolCategory } from "@/data/tools";
+import { categoryMeta, getToolsByCategory, tools, type ToolCategory } from "@/data/tools";
+import { StructuredData } from "@/components/StructuredData";
+import { homeStructuredData } from "@/lib/seo";
 
 const categories: ToolCategory[] = ["networking", "ip", "developer"];
 
 export const metadata: Metadata = {
-  alternates: { canonical: "/" }
+  title: { absolute: "Free Network & Developer Tools | buffer.lol" },
+  description: "Free browser-based tools for DNS, HTTP, SSL, IP addresses, network diagnostics, JSON, Base64, UUIDs, timestamps, and more.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Free Network & Developer Tools | buffer.lol",
+    description: "Fast browser-based networking, IP, web, and developer utilities with no sign-up.",
+    url: "/",
+    type: "website",
+    siteName: "buffer.lol"
+  }
 };
 
 export default function HomePage() {
   return (
-    <SiteChrome>
-      <main id="main-content">
-        <section className="home-hero" aria-labelledby="hero-title">
+    <>
+      <StructuredData data={homeStructuredData(tools)} />
+      <SiteChrome>
+        <main id="main-content">
+          <section className="home-hero" aria-labelledby="hero-title">
           <div className="hero-copy">
             <div className="eyebrow"><span className="live-dot" /> Browser-based network utilities</div>
-            <h1 id="hero-title">buffer<span>.lol</span></h1>
-            <p className="hero-subtitle">Fast, simple networking tools.</p>
+            <h1 id="hero-title">Network <span>&amp; developer</span> tools.</h1>
+            <p className="hero-subtitle">Fast, focused, and free to use.</p>
             <p className="hero-description">A focused toolbox for network diagnostics, web checks, and developer utilities—built to be quick, clear, and useful without getting in your way.</p>
             <div className="hero-actions">
               <Link className="primary-button" href="#networking">Explore tools <span>↓</span></Link>
@@ -31,11 +44,11 @@ export default function HomePage() {
           </div>
 
           <HeroTerminal />
-        </section>
+          </section>
 
-        <QuickAccess />
+          <QuickAccess />
 
-        <IPLensPromo />
+          <IPLensPromo />
 
         <section className="tool-intro" aria-labelledby="toolbox-heading">
           <div><span className="section-kicker">The toolbox</span><h2 id="toolbox-heading">Everything you need.<br />Nothing you don&apos;t.</h2></div>
@@ -74,7 +87,8 @@ export default function HomePage() {
           <p>Small tools. Clear results. No accounts, dashboards, or mystery.</p>
           <Link href="/tools/uuid-generator">Generate a UUID <span>→</span></Link>
         </section>
-      </main>
-    </SiteChrome>
+        </main>
+      </SiteChrome>
+    </>
   );
 }
