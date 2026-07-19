@@ -50,7 +50,7 @@ export default function IPLensSupportPage() {
 
           <h2>Contact</h2>
           <p><a className="secondary-button inline-support-button" href={`mailto:${ipLensConfig.supportEmail}?subject=IP%20Lens%20Support`}>Email IP Lens support</a></p>
-          <p><Link href="/ip-lens">Back to IP Lens</Link> · <Link href="/ip-lens/privacy">Read the privacy notice</Link></p>
+          <p><Link href="/ip-lens">Back to IP Lens</Link> · <Link href="/ip-lens/privacy">Read the privacy notice</Link> · <Link href="/ip-lens/terms">Read the terms</Link></p>
         </article>
       </main>
     </SiteChrome>

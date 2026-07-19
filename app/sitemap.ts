@@ -5,7 +5,7 @@ const baseUrl = "https://buffer.lol";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  const staticRoutes = ["", "/privacy", "/terms", "/ip-lens", "/ip-lens/privacy", "/ip-lens/support"];
+  const staticRoutes = ["", "/privacy", "/terms", "/ip-lens", "/ip-lens/privacy", "/ip-lens/terms", "/ip-lens/support"];
 
   return [
     ...staticRoutes.map((route) => ({
