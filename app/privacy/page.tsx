@@ -23,10 +23,11 @@ export default function PrivacyPage() {
             <li>Server-backed network and IP tools process the target you submit, the request metadata needed to complete the check, and short-lived diagnostic results.</li>
             <li>Your email address and message content if you contact us.</li>
             <li>Basic technical metadata collected by the hosting platform, such as request time, IP address, user agent, and abuse-prevention signals.</li>
+            <li>Aggregate page-view, referrer, device, country, and performance measurements produced by Cloudflare Web Analytics without site-set analytics cookies or advertising identifiers.</li>
           </ul>
 
           <h2>How We Use It</h2>
-          <p>We use submitted data to provide requested tools, respond to messages, prevent abuse, and improve reliability. We do not sell contact emails.</p>
+          <p>We use submitted data to provide requested tools, respond to messages, prevent abuse, understand aggregate site usage, and improve reliability and navigation. We do not sell contact emails or analytics data.</p>
 
           <h2>Tool Data</h2>
           <p>JSON, Base64, hashing, UUID, timestamp, URL parsing, JWT decoding, regex testing, CIDR calculations, and user-agent utilities run locally in your browser. Ping and packet-loss/stability tests send repeated HTTPS requests from your browser to buffer.lol. Server-backed DNS, HTTP, TLS, uptime, port, RDAP, redirect, robots/sitemap, public IP, geolocation, ASN, and traceroute tools send the target to buffer.lol only to produce the requested result. Traceroute checks are handled by a restricted diagnostics worker.</p>

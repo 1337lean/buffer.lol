@@ -347,6 +347,21 @@ main,
 .tool-command span { color: var(--purple); }
 .tool-command i { display: inline-block; width: 5px; height: 11px; margin-left: 4px; vertical-align: -2px; background: var(--purple); animation: blink 1s steps(2) infinite; }
 .tool-workspace { display: grid; grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr); gap: 0.8rem; align-items: stretch; }
+.tool-guide { max-width: 960px; margin: 5rem auto 3rem; padding-top: 4rem; border-top: 1px solid var(--line); }
+.tool-guide > header { max-width: 780px; }
+.tool-guide h2 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; letter-spacing: -0.05em; }
+.tool-guide > header > p { margin-top: 1.1rem; color: #c5c1ce; font-size: 1rem; line-height: 1.8; }
+.tool-guide-sections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2.5rem; }
+.tool-guide-sections section { padding: 1.25rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.02); }
+.tool-guide h3 { color: #e4e0e8; font-size: 0.92rem; }
+.tool-guide-sections p, .tool-guide-sections li { margin-top: 0.8rem; color: var(--muted); font-size: 0.82rem; line-height: 1.72; }
+.tool-guide-sections ul { padding-left: 1.1rem; }
+.tool-faq { margin-top: 4rem; }
+.tool-faq h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.tool-faq dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; margin-top: 1.5rem; }
+.tool-faq dl > div { padding: 1.2rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(155, 135, 245, 0.025); }
+.tool-faq dt { color: #ded9e5; font-size: 0.88rem; font-weight: 650; }
+.tool-faq dd { margin-top: 0.65rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
 .related-tools { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1rem; margin-top: 0.8rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.018); }
 .related-tools > span { color: var(--faint); font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .related-tools > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
@@ -477,6 +492,7 @@ main,
   .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tool-workspace { grid-template-columns: 1fr; }
   .tool-controls, .result-panel { min-height: 340px; }
+  .tool-guide-sections { grid-template-columns: 1fr; }
   .launch-strip { grid-template-columns: 1fr auto; }
   .launch-strip p { display: none; }
 }
@@ -597,6 +613,12 @@ main,
   .tool-page-header { align-items: start; flex-direction: column; padding: 3rem 0 2rem; }
   .tool-page-header h1 { font-size: clamp(2.6rem, 13vw, 4rem); }
   .tool-command { display: none; }
+  .tool-guide { margin-top: 3.5rem; padding-top: 3rem; }
+  .tool-guide > header > p { font-size: 0.91rem; line-height: 1.7; }
+  .tool-guide-sections { gap: 0.65rem; margin-top: 2rem; }
+  .tool-guide-sections section { padding: 1rem; }
+  .tool-faq { margin-top: 3rem; }
+  .tool-faq dl { grid-template-columns: 1fr; }
   .tool-controls { padding: 1rem; }
   .tool-controls input, .tool-controls textarea, .tool-controls select { font-size: 16px; }
   .result-list div { grid-template-columns: 1fr; gap: 0.35rem; }

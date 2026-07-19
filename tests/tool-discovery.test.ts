@@ -12,6 +12,14 @@ function tool(name: string, overrides: Partial<Tool> = {}): Tool {
     command: "check",
     status: "available",
     keywords: [],
+    seo: {
+      title: `${name} online`,
+      metaDescription: "A complete description of this useful network diagnostic tool for testing.",
+      updatedAt: "2026-07-19",
+      intro: "A useful introduction.",
+      sections: [],
+      faq: []
+    },
     ...overrides
   };
 }

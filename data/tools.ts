@@ -1,4 +1,26 @@
+import { toolSeoContent } from "./tool-seo";
+
 export type ToolCategory = "networking" | "ip" | "developer";
+
+export type ToolSeoSection = {
+  heading: string;
+  paragraphs: string[];
+  bullets?: string[];
+};
+
+export type ToolSeoFaq = {
+  question: string;
+  answer: string;
+};
+
+export type ToolSeo = {
+  title: string;
+  metaDescription: string;
+  updatedAt: string;
+  intro: string;
+  sections: ToolSeoSection[];
+  faq: ToolSeoFaq[];
+};
 
 export type Tool = {
   slug: string;
@@ -13,6 +35,7 @@ export type Tool = {
   featured?: boolean;
   relatedSlugs?: string[];
   supportsTargetPrefill?: boolean;
+  seo: ToolSeo;
 };
 
 export const categoryMeta: Record<
@@ -36,7 +59,7 @@ export const categoryMeta: Record<
   }
 };
 
-const toolDefinitions: Array<Omit<Tool, "keywords"> & { keywords?: string[] }> = [
+const toolDefinitions: Array<Omit<Tool, "keywords" | "seo"> & { keywords?: string[] }> = [
   {
     slug: "ping",
     name: "Browser Latency Test",
@@ -314,7 +337,11 @@ const toolDefinitions: Array<Omit<Tool, "keywords"> & { keywords?: string[] }> =
   }
 ];
 
-export const tools: Tool[] = toolDefinitions.map((tool) => ({ ...tool, keywords: tool.keywords ?? [] }));
+export const tools: Tool[] = toolDefinitions.map((tool) => ({
+  ...tool,
+  keywords: tool.keywords ?? [],
+  seo: toolSeoContent[tool.slug]
+}));
 
 export function getToolsByCategory(category: ToolCategory) {
   return tools.filter((tool) => tool.category === category);

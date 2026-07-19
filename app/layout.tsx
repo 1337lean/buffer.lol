@@ -4,23 +4,26 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://buffer.lol"),
   title: {
-    default: "buffer.lol | Networking & developer tools",
+    default: "Free Network & Developer Tools | buffer.lol",
     template: "%s | buffer.lol"
   },
   description:
-    "Fast, simple browser-based tools for network diagnostics, web checks, and developer utilities.",
+    "Free browser-based tools for network diagnostics, web checks, IP addresses, and developer utilities.",
   openGraph: {
-    title: "buffer.lol",
+    title: "Free Network & Developer Tools | buffer.lol",
     description:
-      "Fast, simple browser-based networking and developer tools.",
+      "Fast browser-based networking, IP, web, and developer utilities with no sign-up.",
     type: "website",
-    url: "https://buffer.lol/"
+    url: "https://buffer.lol/",
+    siteName: "buffer.lol",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "buffer.lol network and developer tools" }]
   },
   twitter: {
-    card: "summary",
-    title: "buffer.lol",
+    card: "summary_large_image",
+    title: "Free Network & Developer Tools | buffer.lol",
     description:
-      "Fast, simple browser-based networking and developer tools."
+      "Fast browser-based networking, IP, web, and developer utilities with no sign-up.",
+    images: ["/opengraph-image"]
   },
   icons: {
     icon: [

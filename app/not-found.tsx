@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { SiteChrome } from "@/components/landing/SiteChrome";
+
+export const metadata: Metadata = {
+  title: "Page Not Found",
+  robots: { index: false, follow: false }
+};
 
 export default function NotFoundPage() {
   return (
