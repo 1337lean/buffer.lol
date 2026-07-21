@@ -179,7 +179,7 @@ export function StatusChip({ status, label }: { status: DiagnosticStatus | Resol
 
 function WorkflowLinks({ target, links }: { target: string; links: string[] }) {
   const names: Record<string, string> = { "dns-lookup": "DNS Lookup", "email-dns-health": "Email DNS Health", "dns-resolver-check": "DNS Resolver Comparison", "ssl-checker": "SSL Certificate Checker", "http-headers": "HTTP Header Inspector", "redirect-checker": "Redirect Checker" };
-  return <div className="result-workflows">{links.map((slug) => <Link key={slug} href={`/tools/${slug}?target=${encodeURIComponent(target)}`}>{names[slug]} <span aria-hidden="true">↗</span></Link>)}</div>;
+  return <div className="result-workflows">{links.map((slug) => <Link key={slug} href={`/tools/${slug}?target=${encodeURIComponent(target)}`}>{names[slug]} <span aria-hidden="true">→</span></Link>)}</div>;
 }
 
 function CopyJsonButton({ value }: { value: unknown }) {

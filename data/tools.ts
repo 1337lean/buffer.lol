@@ -29,6 +29,7 @@ export type Tool = {
   category: ToolCategory;
   command: string;
   status: "available" | "backend";
+  runtime: "local" | "browser" | "server" | "worker";
   inputLabel?: string;
   inputPlaceholder?: string;
   keywords: string[];
@@ -59,7 +60,7 @@ export const categoryMeta: Record<
   }
 };
 
-const toolDefinitions: Array<Omit<Tool, "keywords" | "seo"> & { keywords?: string[] }> = [
+const toolDefinitions: Array<Omit<Tool, "keywords" | "runtime" | "seo"> & { keywords?: string[] }> = [
   {
     slug: "ping",
     name: "Browser Latency Test",
@@ -337,9 +338,33 @@ const toolDefinitions: Array<Omit<Tool, "keywords" | "seo"> & { keywords?: strin
   }
 ];
 
+const localToolSlugs = new Set([
+  "cidr-calculator",
+  "user-agent",
+  "json-formatter",
+  "base64",
+  "hash-generator",
+  "uuid-generator",
+  "timestamp",
+  "url-parser",
+  "jwt-decoder",
+  "regex-tester"
+]);
+
+const browserCheckSlugs = new Set(["ping", "packet-loss"]);
+const workerToolSlugs = new Set(["traceroute"]);
+
+function getToolRuntime(slug: string): Tool["runtime"] {
+  if (localToolSlugs.has(slug)) return "local";
+  if (browserCheckSlugs.has(slug)) return "browser";
+  if (workerToolSlugs.has(slug)) return "worker";
+  return "server";
+}
+
 export const tools: Tool[] = toolDefinitions.map((tool) => ({
   ...tool,
   keywords: tool.keywords ?? [],
+  runtime: getToolRuntime(tool.slug),
   seo: toolSeoContent[tool.slug]
 }));
 

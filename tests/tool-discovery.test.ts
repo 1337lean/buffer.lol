@@ -11,6 +11,7 @@ function tool(name: string, overrides: Partial<Tool> = {}): Tool {
     category: "networking",
     command: "check",
     status: "available",
+    runtime: "local",
     keywords: [],
     seo: {
       title: `${name} online`,
@@ -79,6 +80,13 @@ describe("tool registry and target prefilling", () => {
     expect(tools.filter((item) => item.category === "networking")).toHaveLength(15);
     expect(tools.filter((item) => item.category === "ip")).toHaveLength(4);
     expect(tools.filter((item) => item.category === "developer")).toHaveLength(8);
+  });
+
+  it("labels each tool with its actual request path", () => {
+    expect(tools.find((item) => item.slug === "json-formatter")?.runtime).toBe("local");
+    expect(tools.find((item) => item.slug === "ping")?.runtime).toBe("browser");
+    expect(tools.find((item) => item.slug === "dns-lookup")?.runtime).toBe("server");
+    expect(tools.find((item) => item.slug === "traceroute")?.runtime).toBe("worker");
   });
 
   it("accepts public-looking targets and rejects private, reserved, or payload values", () => {

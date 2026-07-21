@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MobileNavigation } from "@/components/landing/MobileNavigation";
 import { ToolLauncher } from "@/components/tools/ToolDiscovery";
 import { ipLensConfig } from "@/data/ip-lens";
 
@@ -24,7 +25,10 @@ export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "childr
         <Link href="/ip-lens">IP Lens</Link>
         {docsUrl && <a href={docsUrl}>Docs</a>}
       </nav>
-      <ToolLauncher />
+      <div className="header-actions">
+        <ToolLauncher />
+        <MobileNavigation homePrefix={prefix} />
+      </div>
     </header>
   );
 }
