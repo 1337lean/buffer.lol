@@ -688,6 +688,10 @@ function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialT
   const [result, setResult] = useState<BackendResult>({ kind: "idle", message: "Waiting for input." });
   const status = result.kind === "success" ? "success" : result.kind === "error" ? "error" : result.kind === "pending" ? "pending" : "idle";
   const isLiveBackendTool = tool.status === "available";
+  const backendLabel = tool.runtime === "worker" ? "Worker diagnostic" : "Server diagnostic";
+  const backendDescription = tool.runtime === "worker"
+    ? "This tool runs through buffer.lol's restricted diagnostics worker."
+    : "This tool runs through buffer.lol's restricted same-origin diagnostics API.";
 
   async function runBackendRequest(event: React.FormEvent) {
     event.preventDefault();
@@ -729,8 +733,8 @@ function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialT
     <>
       <form className="tool-controls" onSubmit={runBackendRequest}>
         <div className={isLiveBackendTool ? "backend-banner is-live" : "backend-banner"}>
-          <span>{isLiveBackendTool ? "Server check" : "Backend required"}</span>
-          <p>{isLiveBackendTool ? "This tool runs through the same-origin diagnostics API." : "This tool needs a container or VM worker before it can return live network data."}</p>
+          <span>{isLiveBackendTool ? backendLabel : "Backend required"}</span>
+          <p>{isLiveBackendTool ? backendDescription : "This tool needs a container or VM worker before it can return live network data."}</p>
         </div>
         <label>
           <FieldLabel>{tool.inputLabel || "Target"}</FieldLabel>

@@ -8,22 +8,22 @@ export const metadata: Metadata = {
     template: "%s | buffer.lol"
   },
   description:
-    "Free browser-based tools for network diagnostics, web checks, IP addresses, and developer utilities.",
+    "Free tools for network diagnostics, web checks, IP addresses, and private browser-side developer utilities.",
   openGraph: {
     title: "Free Network & Developer Tools | buffer.lol",
     description:
-      "Fast browser-based networking, IP, web, and developer utilities with no sign-up.",
+      "Free networking, IP, web, and developer utilities with clear local and server data paths.",
     type: "website",
     url: "https://buffer.lol/",
     siteName: "buffer.lol",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "buffer.lol network and developer tools" }]
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "buffer.lol network diagnostics and developer tools" }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Free Network & Developer Tools | buffer.lol",
     description:
-      "Fast browser-based networking, IP, web, and developer utilities with no sign-up.",
-    images: ["/opengraph-image"]
+      "Free networking, IP, web, and developer utilities with clear local and server data paths.",
+    images: ["/og.png"]
   },
   icons: {
     icon: [
