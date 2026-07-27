@@ -182,7 +182,7 @@ export default function IPLensPage() {
             number="06"
             label="Pricing"
             title="One purchase. No recurring bill."
-            text="IP Lens is planned as a $4.99 paid App Store download. One purchase, with no advertising, StoreKit upsells, or recurring subscription."
+            text="IP Lens is planned as a $1.99 paid App Store download. One purchase, with no advertising, StoreKit upsells, or recurring subscription."
           />
           <div className="pricing-panel">
             <div>

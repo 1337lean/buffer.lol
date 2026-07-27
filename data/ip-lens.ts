@@ -22,7 +22,7 @@ export const ipLensConfig = {
   appIcon: "/ip-lens/app-icon.png",
   releaseStatus: "Coming soon",
   appStoreUrl: null as string | null,
-  priceText: "$4.99 one-time purchase",
+  priceText: "$1.99 one-time purchase",
   priceStatus: "Planned App Store price · USD",
   supportEmail: "support@buffer.lol",
   providers: {
