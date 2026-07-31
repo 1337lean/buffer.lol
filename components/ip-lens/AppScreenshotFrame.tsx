@@ -28,7 +28,7 @@ export function AppScreenshotFrame({
               <strong>{screenshot.label}</strong>
               <p>Add the final app capture in <code>/public/ip-lens/screenshots</code>.</p>
             </div>
-            <span className="placeholder-status"><i aria-hidden="true" /> Ready for artwork</span>
+            <span className="placeholder-status">Ready for artwork</span>
           </div>
         )}
       </div>

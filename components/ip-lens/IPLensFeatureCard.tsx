@@ -5,12 +5,10 @@ export function IPLensFeatureCard({ feature }: { feature: IPLensFeature }) {
     <article className="tool-card ip-lens-feature-card">
       <div className="tool-card-topline">
         <span className="command-icon" aria-hidden="true">{feature.command}</span>
-        <span className="availability is-live">Included</span>
+        <span className="availability">Included</span>
       </div>
-      <div>
-        <h3>{feature.title}</h3>
-        <p>{feature.description}</p>
-      </div>
+      <h3>{feature.title}</h3>
+      <p>{feature.description}</p>
     </article>
   );
 }

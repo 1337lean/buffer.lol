@@ -111,7 +111,7 @@ function DiagnosticPanel({ slug, state, children }: { slug: string; state: RunSt
   const status = state.kind === "success" ? "success" : state.kind === "error" ? "error" : state.kind === "pending" ? "pending" : "idle";
   return (
     <ResultPanel title={`${slug}.output`} status={status}>
-      {state.kind === "idle" && <p className="terminal-empty"><span className="prompt">$</span> waiting for a target<span className="cursor" /></p>}
+      {state.kind === "idle" && <p className="terminal-empty">waiting for a target</p>}
       {state.kind === "pending" && <div className="loading-lines" aria-label="Loading"><span /><span /><span /></div>}
       {state.kind === "error" && <div className="backend-result"><span>ERROR</span><h3>Request did not complete</h3><p>{state.message}</p>{state.requestId && <code>requestId: {state.requestId}</code>}</div>}
       {state.kind === "success" && <div className="stacked-output"><div className="result-actions"><CopyJsonButton value={state.data} /></div>{children}</div>}

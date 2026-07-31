@@ -18,7 +18,7 @@ export function AppStoreCTA({ className = "primary-button" }: { className?: stri
 
   return (
     <button
-      className={`${className} app-store-cta is-disabled`}
+      className="secondary-button app-store-cta is-disabled"
       type="button"
       disabled
       aria-label={`View ${ipLensConfig.appName} on the App Store — ${ipLensConfig.releaseStatus}`}

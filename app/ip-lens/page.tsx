@@ -41,11 +41,9 @@ const sampleFields = [
 function SectionHeader({ id, number, label, title, text }: { id: string; number: string; label: string; title: string; text: string }) {
   return (
     <header className="product-section-header">
-      <div>
-        <span className="category-number">{number}</span>
-        <span className="section-kicker">{label}</span>
-        <h2 id={id}>{title}</h2>
-      </div>
+      <span className="category-number">{number}</span>
+      <span className="section-kicker">{label}</span>
+      <h2 id={id}>{title}</h2>
       <p>{text}</p>
     </header>
   );
@@ -59,7 +57,6 @@ export default function IPLensPage() {
       <main className="ip-lens-page" id="main-content">
         <section className="product-hero" aria-labelledby="ip-lens-title">
           <div className="product-hero-copy">
-            <div className="eyebrow"><span className="live-dot" /> native://ios</div>
             <div className="product-identity">
               <Image className="product-app-icon" src={ipLensConfig.appIcon} width={144} height={144} alt="IP Lens app icon" priority />
               <p className="product-name">{ipLensConfig.appName}<span>IP lookup and network tools</span></p>
@@ -71,11 +68,10 @@ export default function IPLensPage() {
               <Link className="secondary-button" href="#features">Explore features <span aria-hidden="true">↓</span></Link>
             </div>
             <ul className="product-badges" aria-label="Product highlights">
-              {ipLensConfig.badges.map((badge) => <li key={badge}><i aria-hidden="true" />{badge}</li>)}
+              {ipLensConfig.badges.map((badge) => <li key={badge}>{badge}</li>)}
             </ul>
           </div>
           <div className="hero-app-preview">
-            <div className="preview-orbit" aria-hidden="true" />
             <AppScreenshotFrame screenshot={heroScreenshot} featured />
           </div>
         </section>
@@ -116,13 +112,12 @@ export default function IPLensPage() {
           />
           <div className="sample-workflow">
             <div className="sample-workflow-bar">
-              <span className="terminal-dots" aria-hidden="true"><i /><i /><i /></span>
               <strong>Illustrative sample</strong>
-              <span className="status-success">reserved address</span>
+              <span>reserved address</span>
             </div>
             <div className="sample-workflow-body">
               <div className="sample-address">
-                <span>lookup://sample</span>
+                <span>Sample lookup</span>
                 <strong>203.0.113.42</strong>
                 <p>Reserved documentation address. The values below are fictional and demonstrate layout only.</p>
               </div>
@@ -143,7 +138,7 @@ export default function IPLensPage() {
           />
           <div className="privacy-callout">
             <div className="privacy-copy">
-              <span className="privacy-signal"><i aria-hidden="true" /> device → provider</span>
+              <span className="privacy-signal">device → provider</span>
               <h3>Requests go directly from your device.</h3>
               <p>Free IP lookups go to {ipLensConfig.providers.freeIPData}; personal-key lookups go to {ipLensConfig.providers.personalIPData}. DNS queries go only to the selected {ipLensConfig.providers.dns} resolver, while registration queries go directly to the {ipLensConfig.providers.registration}.</p>
               <div className="privacy-links">
@@ -220,7 +215,7 @@ export default function IPLensPage() {
 
         <section className="product-final-cta" aria-labelledby="final-cta-heading">
           <div>
-            <span className="section-kicker">native://ios</span>
+            <span className="section-kicker">iPhone app</span>
             <h2 id="final-cta-heading">A clearer view of the network.</h2>
             <p>Focused tools, native performance, and no recurring subscription.</p>
           </div>

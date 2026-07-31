@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { MobileNavigation } from "@/components/landing/MobileNavigation";
 import { ToolLauncher } from "@/components/tools/ToolDiscovery";
 import { ipLensConfig } from "@/data/ip-lens";
 
@@ -14,21 +13,17 @@ export function SiteHeader({ navHomePrefix = "" }: Omit<SiteChromeProps, "childr
 
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="buffer.lol home">
-        <span className="brand-prompt" aria-hidden="true">&gt;_</span>
+      <Link className="wordmark" href="/" aria-label="buffer.lol home">
         buffer<span>.lol</span>
       </Link>
-      <nav className="nav-links" aria-label="Primary navigation">
+      <nav className="site-nav" aria-label="Primary navigation">
         <Link href={`${prefix}#networking`}>Networking</Link>
         <Link href={`${prefix}#ip`}>IP tools</Link>
         <Link href={`${prefix}#developer`}>Developer</Link>
         <Link href="/ip-lens">IP Lens</Link>
         {docsUrl && <a href={docsUrl}>Docs</a>}
-      </nav>
-      <div className="header-actions">
         <ToolLauncher />
-        <MobileNavigation homePrefix={prefix} />
-      </div>
+      </nav>
     </header>
   );
 }
@@ -38,10 +33,25 @@ export function SiteFooter() {
 
   return (
     <footer className="site-footer">
-      <div className="footer-brand"><Link className="brand" href="/"><span className="brand-prompt">&gt;_</span>buffer<span>.lol</span></Link><p>Fast, simple networking tools.</p></div>
-      <div className="footer-links"><Link href="/#networking">Networking</Link><Link href="/#ip">IP tools</Link><Link href="/#developer">Developer</Link><Link href="/ip-lens">IP Lens</Link>{docsUrl && <a href={docsUrl}>Docs</a>}</div>
-      <div className="footer-links"><Link href="/ip-lens/privacy">IP Lens privacy</Link><Link href="/ip-lens/terms">IP Lens terms</Link><Link href="/ip-lens/support">Support &amp; feature requests</Link>{ipLensConfig.appStoreUrl && <a href={ipLensConfig.appStoreUrl} rel="noreferrer" target="_blank">App Store ↗</a>}<a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub ↗</a><Link href="/privacy">Site privacy</Link><Link href="/terms">Site terms</Link></div>
-      <div className="footer-bottom"><span>© 2026 buffer.lol</span><span>Built for the curious.</span></div>
+      <div>
+        <Link className="wordmark" href="/">buffer<span>.lol</span></Link>
+        <p>Network and developer tools. No sign-up.</p>
+      </div>
+      <nav aria-label="Site and legal links">
+        <Link href="/#networking">Networking</Link>
+        <Link href="/#ip">IP tools</Link>
+        <Link href="/#developer">Developer</Link>
+        <Link href="/ip-lens">IP Lens</Link>
+        {docsUrl && <a href={docsUrl}>Docs</a>}
+        {ipLensConfig.appStoreUrl && <a href={ipLensConfig.appStoreUrl} rel="noreferrer" target="_blank">App Store</a>}
+        <Link href="/ip-lens/support">Support</Link>
+        <Link href="/ip-lens/privacy">IP Lens privacy</Link>
+        <Link href="/ip-lens/terms">IP Lens terms</Link>
+        <Link href="/privacy">Privacy</Link>
+        <Link href="/terms">Terms</Link>
+        <a href="https://github.com/1337lean/buffer.lol" rel="noreferrer" target="_blank">GitHub</a>
+      </nav>
+      <p className="footer-fineprint">© 2026 buffer.lol · Built for the curious</p>
     </footer>
   );
 }
@@ -50,7 +60,6 @@ export function SiteChrome({ children, navHomePrefix }: SiteChromeProps) {
   return (
     <>
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <div className="grid-overlay" aria-hidden="true" />
       <SiteHeader navHomePrefix={navHomePrefix} />
       {children}
       <SiteFooter />

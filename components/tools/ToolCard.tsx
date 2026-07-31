@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { Tool } from "@/data/tools";
 
 const runtimeLabels: Record<Tool["runtime"], string> = {
-  local: "Runs locally",
-  browser: "Browser check",
-  server: "Server diagnostic",
-  worker: "Worker diagnostic"
+  local: "Local",
+  browser: "Browser",
+  server: "Server",
+  worker: "Worker"
 };
 
 export function ToolCard({ tool }: { tool: Tool }) {
@@ -17,13 +17,8 @@ export function ToolCard({ tool }: { tool: Tool }) {
           {runtimeLabels[tool.runtime]}
         </span>
       </div>
-      <div>
-        <h3>{tool.name}</h3>
-        <p>{tool.description}</p>
-      </div>
-      <span className="card-link">
-        Open tool <span aria-hidden="true">→</span>
-      </span>
+      <h3>{tool.name}</h3>
+      <p>{tool.description}</p>
     </Link>
   );
 }

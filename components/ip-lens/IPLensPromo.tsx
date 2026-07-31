@@ -7,7 +7,7 @@ export function IPLensPromo() {
     <aside className="ip-lens-promo" aria-labelledby="ip-lens-promo-title">
       <Image className="ip-lens-promo-icon" src={ipLensConfig.appIcon} width={92} height={92} alt="" />
       <div>
-        <span className="section-kicker">native://ios</span>
+        <span className="section-kicker">iPhone app</span>
         <h2 id="ip-lens-promo-title">{ipLensConfig.appName}</h2>
         <p>A focused networking toolkit, built natively for iPhone.</p>
       </div>

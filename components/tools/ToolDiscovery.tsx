@@ -88,7 +88,7 @@ export function HeroToolSearch() {
           autoComplete="off"
           spellCheck={false}
         />
-        <button type="submit">Open <span aria-hidden="true">→</span></button>
+        <button type="submit">Open</button>
       </form>
       {expanded && (
         <div className="hero-search-results" id={listboxId} role="listbox" aria-label={query.trim() ? "Matching tools" : "Suggested tools"}>
@@ -195,10 +195,9 @@ export function ToolLauncher() {
 
   return (
     <>
-      <button ref={triggerRef} className="launcher-trigger" type="button" onClick={() => show("header")} aria-haspopup="dialog" aria-label="Find a tool">
-        <span className="launcher-icon" aria-hidden="true">⌕</span>
-        <span className="launcher-label">Find a tool</span>
-        <kbd>⌘/Ctrl K</kbd>
+      <button ref={triggerRef} className="launcher-trigger" type="button" onClick={() => show("header")} aria-haspopup="dialog">
+        Search
+        <kbd aria-hidden="true">⌘K</kbd>
       </button>
       {open && (
         <div className="launcher-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
@@ -276,7 +275,7 @@ export function QuickAccess() {
       <div>{quickTools.map((tool) => (
         <Link key={tool.slug} href={`/tools/${tool.slug}`}>{tool.name}</Link>
       ))}</div>
-      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(OPEN_LAUNCHER_EVENT, { detail: "quick_access" }))}>Find another <span aria-hidden="true">⌘K</span></button>
+      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(OPEN_LAUNCHER_EVENT, { detail: "quick_access" }))}>Search all<span aria-hidden="true">⌘K</span></button>
     </section>
   );
 }

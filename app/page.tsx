@@ -1,8 +1,6 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { Fragment } from "react";
 import { IPLensPromo } from "@/components/ip-lens/IPLensPromo";
-import { HeroTerminal } from "@/components/landing/HeroTerminal";
 import { SiteChrome } from "@/components/landing/SiteChrome";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { HeroToolSearch, QuickAccess } from "@/components/tools/ToolDiscovery";
@@ -49,7 +47,7 @@ export const metadata: Metadata = {
     url: "/",
     type: "website",
     siteName: "buffer.lol",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "buffer.lol network diagnostics and developer tools" }]
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "buffer.lol network diagnostics and developer tools" }]
   }
 };
 
@@ -61,41 +59,26 @@ export default function HomePage() {
         <main id="main-content">
           <section className="home-hero" aria-labelledby="hero-title">
             <div className="hero-copy">
-              <div className="eyebrow"><span className="live-dot" /> Browser-based network utilities</div>
-              <h1 id="hero-title">Network <span>&amp; developer</span> tools.</h1>
-              <p className="hero-subtitle">Diagnose networks and transform data—without the clutter.</p>
-              <p className="hero-description">Find the right network check, web diagnostic, or developer utility and get a clear result in seconds.</p>
+              <h1 id="hero-title">Network tools.<span>Developer tools.</span></h1>
+              <p className="hero-lede">
+                Find the right network check, web diagnostic, or developer utility and get a clear
+                result in seconds.
+              </p>
               <HeroToolSearch />
-              <div className="hero-browse-actions">
-                <Link href="#networking">Browse every tool <span aria-hidden="true">↓</span></Link>
-                <Link href="/tools/json-formatter">Open JSON formatter <span aria-hidden="true">→</span></Link>
-              </div>
-              <div className="hero-trust"><span>◉ No sign-up</span><span>◉ Clear data paths</span><span>◉ Zero clutter</span></div>
+              <QuickAccess />
+              <p className="hero-fineprint">No sign-up · Browser-ready tools stay local · Live diagnostics run through a restricted same-origin API</p>
             </div>
-
-            <HeroTerminal />
           </section>
 
-          <QuickAccess />
-
-          <section className="tool-intro" aria-labelledby="toolbox-heading">
-            <div><span className="section-kicker">The toolbox</span><h2 id="toolbox-heading">Everything you need.<br />Nothing you don&apos;t.</h2></div>
-            <p>From quick network checks to everyday data transforms. Browser-ready tools stay local; live diagnostics run through a restricted same-origin API.</p>
+          <section className="trust-strip" aria-label="Toolbox at a glance">
+            <div><strong>{tools.length}</strong><span>Tools</span></div>
+            {categories.map((category) => (
+              <div key={category}>
+                <strong>{getToolsByCategory(category).length}</strong>
+                <span>{categoryMeta[category].title}</span>
+              </div>
+            ))}
           </section>
-
-          <nav className="mobile-tool-nav" aria-label="Tool categories">
-            {categories.map((category) => {
-              const meta = categoryMeta[category];
-              const tools = getToolsByCategory(category);
-
-              return (
-                <Link href={`#${category}`} key={category}>
-                  <span>{meta.title.replace(" tools", "")}</span>
-                  <strong>{tools.length}</strong>
-                </Link>
-              );
-            })}
-          </nav>
 
           {categories.map((category, index) => {
             const meta = categoryMeta[category];
@@ -104,7 +87,8 @@ export default function HomePage() {
               <Fragment key={category}>
                 <section className="category-section" id={category}>
                   <header className="category-header">
-                    <div><span className="category-number">0{index + 1}</span><h2>{meta.title}</h2></div>
+                    <span className="category-number">0{index + 1}</span>
+                    <h2>{meta.title}</h2>
                     <p>{meta.description}</p>
                   </header>
                   {category === "networking" ? (
@@ -112,7 +96,7 @@ export default function HomePage() {
                       {networkingGroups.map((group) => (
                         <section className="tool-group" key={group.id} aria-labelledby={`tool-group-${group.id}`}>
                           <header>
-                            <div><h3 id={`tool-group-${group.id}`}>{group.title}</h3><span>{group.slugs.length}</span></div>
+                            <h3 id={`tool-group-${group.id}`}>{group.title}</h3>
                             <p>{group.description}</p>
                           </header>
                           <div className="tools-grid">{group.slugs.map((slug) => {
@@ -130,12 +114,6 @@ export default function HomePage() {
               </Fragment>
             );
           })}
-
-          <section className="launch-strip">
-            <div><span className="live-dot" /><strong>Built for the open web</strong></div>
-            <p>Small tools. Clear results. No accounts, dashboards, or mystery.</p>
-            <Link href="/tools/uuid-generator">Generate a UUID <span>→</span></Link>
-          </section>
         </main>
       </SiteChrome>
     </>

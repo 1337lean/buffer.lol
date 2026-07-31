@@ -169,7 +169,7 @@ function UuidGenerator() {
         <p className="privacy-note"><span>●</span> Generated securely in your browser.</p>
       </section>
       <ResultPanel title="uuids.txt" status={uuids.length ? "success" : "idle"}>
-        {uuids.length ? <><div className="result-actions"><CopyButton value={uuids.join("\n")} label="Copy all" /></div><ol className="uuid-list">{uuids.map((uuid, index) => <li key={uuid}><span>{String(index + 1).padStart(2, "0")}</span>{uuid}</li>)}</ol></> : <p className="terminal-empty">$ waiting for generation<span className="cursor" /></p>}
+        {uuids.length ? <><div className="result-actions"><CopyButton value={uuids.join("\n")} label="Copy all" /></div><ol className="uuid-list">{uuids.map((uuid, index) => <li key={uuid}><span>{String(index + 1).padStart(2, "0")}</span>{uuid}</li>)}</ol></> : <p className="terminal-empty">waiting for generation</p>}
       </ResultPanel>
     </>
   );
@@ -217,13 +217,12 @@ function UserAgentParser() {
   return (
     <>
       <section className="tool-controls info-card">
-        <span className="command-icon large">ua</span>
         <h2>Browser signals</h2>
         <p>This page reads only the standard environment values exposed to client-side JavaScript.</p>
         <p className="privacy-note"><span>●</span> Nothing is sent to buffer.lol.</p>
       </section>
       <ResultPanel title="navigator.json" status={details ? "success" : "pending"}>
-        {details ? <dl className="result-list"><div><dt>User agent</dt><dd>{details.userAgent}</dd></div><div><dt>Platform</dt><dd>{details.platform}</dd></div><div><dt>Language</dt><dd>{details.language}</dd></div><div><dt>Cookies</dt><dd>{details.cookies}</dd></div><div><dt>Touch</dt><dd>{details.touch}</dd></div></dl> : <p className="terminal-empty">$ reading navigator<span className="cursor" /></p>}
+        {details ? <dl className="result-list"><div><dt>User agent</dt><dd>{details.userAgent}</dd></div><div><dt>Platform</dt><dd>{details.platform}</dd></div><div><dt>Language</dt><dd>{details.language}</dd></div><div><dt>Cookies</dt><dd>{details.cookies}</dd></div><div><dt>Touch</dt><dd>{details.touch}</dd></div></dl> : <p className="terminal-empty">reading navigator</p>}
       </ResultPanel>
     </>
   );
@@ -297,7 +296,7 @@ function UrlParser() {
         <p className="privacy-note"><span>●</span> URLs and text are processed locally in your browser.</p>
       </section>
       <ResultPanel title="url.output" status={status}>
-        {result.kind === "idle" && <p className="terminal-empty">$ {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
         {result.kind === "transform" && <dl className="result-list"><div><dt>{result.label}</dt><dd>{result.value}</dd></div></dl>}
         {result.kind === "url" && (
@@ -366,7 +365,7 @@ function JwtDecoder() {
         <p className="privacy-note"><span>●</span> Decoded locally. Signatures are not verified.</p>
       </section>
       <ResultPanel title="jwt.json" status={status}>
-        {result.kind === "idle" && <p className="terminal-empty">$ {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
         {result.kind === "success" && (
           <div className="stacked-output">
@@ -434,7 +433,7 @@ function RegexTester() {
         <p className="privacy-note"><span>●</span> Regexes run locally using JavaScript RegExp.</p>
       </section>
       <ResultPanel title="regex.matches" status={status}>
-        {result.kind === "idle" && <p className="terminal-empty">$ {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
         {result.kind === "success" && (
           <div className="stacked-output">
@@ -532,14 +531,13 @@ function BrowserLatencyTool({ mode }: { mode: "ping" | "stability" }) {
   return (
     <>
       <section className="tool-controls info-card">
-        <span className="command-icon large">{mode === "ping" ? "ms" : "%"}</span>
         <h2>{mode === "ping" ? "Browser latency" : "Connection stability"}</h2>
         <p>{mode === "ping" ? "Measures HTTPS round-trip time from this browser to buffer.lol." : "Sends repeated HTTPS samples from this browser to buffer.lol and counts failed requests."}</p>
         <div className="button-row"><button className="primary-button" onClick={runTest} disabled={result.kind === "pending"} type="button">{result.kind === "pending" ? "Testing..." : mode === "ping" ? "Test latency" : "Test stability"} <span>→</span></button></div>
         <p className="privacy-note"><span>●</span> This test targets buffer.lol only.</p>
       </section>
       <ResultPanel title={title} status={status}>
-        {result.kind === "idle" && <p className="terminal-empty"><span className="prompt">$</span> {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "pending" && <BrowserLatencyProgress result={result} />}
         {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
         {result.kind === "success" && <BrowserLatencyOutput result={result} />}
@@ -609,7 +607,7 @@ function CidrCalculator() {
         <p className="privacy-note"><span>●</span> IPv4 math runs locally with unsigned 32-bit arithmetic.</p>
       </section>
       <ResultPanel title="cidr.output" status={status}>
-        {result.kind === "idle" && <p className="terminal-empty">$ {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "error" && <pre className="wrap-output">{result.message}</pre>}
         {result.kind === "success" && (
           <>
@@ -744,7 +742,7 @@ function BackendPlaceholder({ tool, initialTarget = "" }: { tool: Tool; initialT
         <p className="helper-text">{isLiveBackendTool ? "Targets are validated server-side before any outbound request is made." : "Use the planned worker deployment for ICMP and traceroute support."}</p>
       </form>
       <ResultPanel title={`${tool.slug}.output`} status={status}>
-        {result.kind === "idle" && <p className="terminal-empty"><span className="prompt">$</span> {result.message}<span className="cursor" /></p>}
+        {result.kind === "idle" && <p className="terminal-empty">{result.message}</p>}
         {result.kind === "pending" && <div className="loading-lines" aria-label="Loading"><span /><span /><span /></div>}
         {result.kind === "error" && (
           <div className="backend-result">

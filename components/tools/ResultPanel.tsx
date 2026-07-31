@@ -10,7 +10,6 @@ export function ResultPanel({ title = "output.log", status = "idle", children }:
   return (
     <section className="result-panel" aria-live="polite">
       <div className="terminal-bar">
-        <span className="terminal-dots" aria-hidden="true"><i /><i /><i /></span>
         <strong>{title}</strong>
         <span className={`terminal-status status-${status}`}>{status}</span>
       </div>
