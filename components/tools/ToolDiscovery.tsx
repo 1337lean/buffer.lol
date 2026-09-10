@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { DEFAULT_QUICK_ACCESS, readRecentTools, recordRecentTool, searchTools } from "@/lib/tool-discovery";
-import { getTool, tools, type Tool } from "@/data/tools";
+import { getCatalogTool as getTool, toolCatalog as tools, type ToolSummary as Tool } from "@/data/tool-catalog";
 
 type LauncherLocation = "header" | "quick_access";
 const VALID_SLUGS = new Set(tools.map((tool) => tool.slug));

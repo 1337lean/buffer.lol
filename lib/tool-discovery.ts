@@ -1,4 +1,4 @@
-import type { Tool } from "@/data/tools";
+import type { ToolSummary } from "@/data/tool-catalog";
 
 export const RECENT_TOOLS_KEY = "buffer.lol:recent-tools:v1";
 export const DEFAULT_QUICK_ACCESS = ["dns-lookup", "http-headers", "my-ip", "json-formatter"];
@@ -15,7 +15,7 @@ export function normalizeSearch(value: string) {
     .replace(/\s+/g, " ");
 }
 
-export function searchTools(toolList: Tool[], query: string, limit = 10): Tool[] {
+export function searchTools<T extends ToolSummary>(toolList: T[], query: string, limit = 10): T[] {
   const normalizedQuery = normalizeSearch(query);
   if (!normalizedQuery) return [];
   const tokens = normalizedQuery.split(" ");
